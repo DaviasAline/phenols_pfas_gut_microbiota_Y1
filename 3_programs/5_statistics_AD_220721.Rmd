@@ -1,0 +1,1493 @@
+---
+title: "3_statistics_AD_220721"
+author: "Aline"
+date: '2022-07-21'
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	message = TRUE,
+	warning = TRUE,
+	include = FALSE
+)
+```
+
+
+# Chargement des données 
+```{r Chargement des packages, message=FALSE, warning=FALSE, include=FALSE}
+## Préparation
+source("~/GUMME/pollutants_gut_microbiota_Y1/3_programs/3_data_selection_AD_gumme.R", encoding = 'UTF-8')  # bdd 
+source("~/GUMME/pollutants_gut_microbiota_Y1/3_programs/4_functions_AD_gumme.R", encoding = 'UTF-8')       # fonctions
+```
+
+# Analyses principales 
+## effets des covariables seules
+```{r}
+effectif_alpha <- bdd_alpha %>% 
+  filter(!is.na(ch_feces_ACE_5000_ASV_Y1)) %>% 
+  select(all_of(covar_vec_i)) %>% 
+  tbl_summary(missing = "no", 
+              type = list(ch_antibio_Y1_2cat_i ~ "categorical", 
+                          mo_tob_gr_anyt_yn_n2_i ~"categorical", 
+                          Mo_ETS_anyT_yn1_opt_i ~"categorical", 
+                          ch_ETS_12m_opt36m ~ "categorical"),
+              statistic = list(all_continuous() ~ "{N_nonmiss}", 
+                               all_categorical() ~ c("{n} ({p}%)"))) 
+
+
+effectif_taxa <- bdd_taxa %>% 
+  filter(!is.na(ch_feces_rel_g1_Y1)) %>% 
+  select(all_of(covar_vec_i)) %>% 
+  tbl_summary(missing = "no", 
+              type = list(ch_antibio_Y1_2cat_i ~ "categorical", 
+                          mo_tob_gr_anyt_yn_n2_i ~"categorical", 
+                          Mo_ETS_anyT_yn1_opt_i ~"categorical", 
+                          ch_ETS_12m_opt36m ~ "categorical"),
+              statistic = list(all_continuous() ~ "{N_nonmiss}", 
+                               all_categorical() ~ c("{n} ({p}%)"))) 
+
+table_covar_alpha <- tbl_merge(
+  tbls = list(effectif_alpha, 
+              model_covar(data = bdd_alpha, outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1), 
+              model_covar(data = bdd_alpha, outcome = bdd_alpha$ch_feces_Shannon_5000_ASV_Y1), 
+              model_covar(data = bdd_alpha, outcome = bdd_alpha$ch_feces_Faith_5000_ASV_Y1)), 
+  tab_spanner = c("**Effectif**", 
+                  "**Specific richness**", 
+                  "**Shannon diversity index**", 
+                  "**Faith's phylogenetic diversity**"))
+
+table_covar_phyla <- tbl_merge(
+  tbls = list(effectif_taxa, 
+              model_covar(data = bdd_taxa, outcome = bdd_taxa$ch_feces_rel_p1_Y1), 
+              model_covar(data = bdd_taxa, outcome = bdd_taxa$ch_feces_rel_p2_Y1), 
+              model_covar(data = bdd_taxa, outcome = bdd_taxa$ch_feces_rel_p3_Y1), 
+              model_covar(data = bdd_taxa, outcome = bdd_taxa$ch_feces_rel_p4_Y1)), 
+  tab_spanner = c("**Effectif**", 
+                  "**Phylum Firmicutes**", 
+                  "**Phylum Actinobacteria**", 
+                  "**Phylum Bacteroidetes**", 
+                  "**Phylum Proteobacteria**"))
+
+table_covar_genera <- tbl_merge(
+  tbls = list(effectif_taxa, 
+              model_covar(data = bdd_taxa, outcome = bdd_taxa$ch_feces_rel_g1_Y1), 
+              model_covar(data = bdd_taxa, outcome = bdd_taxa$ch_feces_rel_g2_Y1), 
+              model_covar(data = bdd_taxa, outcome = bdd_taxa$ch_feces_rel_g3_Y1), 
+              model_covar(data = bdd_taxa, outcome = bdd_taxa$ch_feces_rel_g4_Y1)), 
+  tab_spanner = c("**Effectif**", 
+                  "**Genus Bifidobacterium**", 
+                  "**Genus Bacteroides**", 
+                  "**Genus Blautia**", 
+                  "**Genera Escherichia / Shigella**"))
+ 
+```
+
+
+## modèle de régression sur l'alpha diversité
+### Phenols 
+```{r}
+# Visualisation des modèles non ajustés / ajustés avec les effets des covariables 
+# ( à faire pour tous les outcomes et tous les polluants)
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$mo_MEPA_total_i_cor_t2_ln, data = bdd_alpha)
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$mo_MEPA_total_i_cor_t3_ln, data = bdd_alpha)
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$ch_MEPA_total_i_cor_M2_ln, data = bdd_alpha)
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$ch_MEPA_total_i_cor_Y1_ln, data = bdd_alpha)
+
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$mo_ETPA_total_i_cor_t2_ln, data = bdd_alpha)
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$mo_ETPA_total_i_cor_t3_ln, data = bdd_alpha)
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$ch_ETPA_total_cat_M2_2, data = bdd_alpha)
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$ch_ETPA_total_i_cor_Y1_ln, data = bdd_alpha)
+
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$mo_PRPA_total_i_cor_t2_ln, data = bdd_alpha)
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$mo_PRPA_total_i_cor_t3_ln, data = bdd_alpha)
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$ch_PRPA_total_cat_M2_2, data = bdd_alpha)
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$ch_PRPA_total_i_cor_Y1_ln, data = bdd_alpha)
+
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$mo_BUPA_total_cat_t2, data = bdd_alpha)
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$mo_BUPA_total_cat_t3, data = bdd_alpha)
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$ch_BUPA_total_cat_M2_2, data = bdd_alpha)
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$ch_BUPA_total_cat_Y1, data = bdd_alpha)
+
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$mo_BPA_total_i_cor_t2_ln, data = bdd_alpha)
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$mo_BPA_total_i_cor_t3_ln, data = bdd_alpha)
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$ch_BPA_total_i_cor_M2_ln, data = bdd_alpha)
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$ch_BPA_total_i_cor_Y1_ln, data = bdd_alpha)
+
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$mo_BPS_total_cat_t2_2, data = bdd_alpha)
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$mo_BPS_total_cat_t3_2, data = bdd_alpha)
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$ch_BPS_total_cat_M2_2, data = bdd_alpha)
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$ch_BPS_total_cat_Y1, data = bdd_alpha)
+
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$mo_OXBE_total_i_cor_t2_ln, data = bdd_alpha)
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$mo_OXBE_total_i_cor_t3_ln, data = bdd_alpha)
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$ch_OXBE_total_i_cor_M2_ln, data = bdd_alpha)
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$ch_OXBE_total_i_cor_Y1_ln, data = bdd_alpha)
+
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$mo_TRCS_total_i_cor_t2_ln, data = bdd_alpha)
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$mo_TRCS_total_i_cor_t3_ln, data = bdd_alpha)
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$ch_TRCS_total_i_cor_M2_ln, data = bdd_alpha)
+model_summary(outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$ch_TRCS_total_i_cor_Y1_ln, data = bdd_alpha)
+
+
+# Tableaux modèles simples et complets (seulement les expo d'intéret)
+table_phenols_obs <- model_univ_multi(data = bdd_alpha, outcome = ch_feces_SpecRich_5000_ASV_Y1, exposure_vec = phenols_vec)
+table_phenols_sha <- model_univ_multi(data = bdd_alpha, outcome = ch_feces_Shannon_5000_ASV_Y1, exposure_vec = phenols_vec)
+table_phenols_fai <- model_univ_multi(data = bdd_alpha, outcome = ch_feces_Faith_5000_ASV_Y1, exposure_vec = phenols_vec)
+
+
+# Tableau de résultats pour article
+table_alpha_phenols <-                         # ici on a que des concentrations totales
+  tbl_merge(
+  tbls = list(
+    model_multi(data = bdd_alpha, outcome = ch_feces_SpecRich_5000_ASV_Y1, exposure_vec = phenols_vec), 
+    model_multi(data = bdd_alpha, outcome = ch_feces_Shannon_5000_ASV_Y1, exposure_vec = phenols_vec), 
+    model_multi(data = bdd_alpha, outcome = ch_feces_Faith_5000_ASV_Y1, exposure_vec = phenols_vec)), 
+  tab_spanner = c("**Specific richness**", "**Shannon diversity index**", "**Faith's phylogenetic diversity**"))
+
+table_alpha_phenols_2 <-                       # ici on a les concentrations conjuguées pour BPA M2 et Y1, et MEPA Y1
+  tbl_merge(
+  tbls = list(
+    model_multi(data = bdd_alpha, outcome = ch_feces_SpecRich_5000_ASV_Y1, exposure_vec = phenols_vec_2), 
+    model_multi(data = bdd_alpha, outcome = ch_feces_Shannon_5000_ASV_Y1, exposure_vec = phenols_vec_2), 
+    model_multi(data = bdd_alpha, outcome = ch_feces_Faith_5000_ASV_Y1, exposure_vec = phenols_vec_2)), 
+  tab_spanner = c("**Specific richness**", "**Shannon diversity index**", "**Faith's phylogenetic diversity**"))
+
+```
+
+### PFAS
+```{r}
+# Visualisation des résutats modèles simples et complets (seulement les expo d'intéret)
+table_pfas_obs <- model_univ_multi(data = bdd_alpha, outcome = ch_feces_SpecRich_5000_ASV_Y1, exposure_vec = pfas_vec)
+table_pfas_sha <- model_univ_multi(data = bdd_alpha, outcome = ch_feces_Shannon_5000_ASV_Y1, exposure_vec = pfas_vec)
+table_pfas_fai <- model_univ_multi(data = bdd_alpha, outcome = ch_feces_Faith_5000_ASV_Y1, exposure_vec = pfas_vec)
+
+# Tableau de résultats pour article
+table_alpha_pfas <-                           # ici on a tous les indiv (aucun exclu)
+  tbl_merge(
+  tbls = list(
+    model_multi(data = bdd_alpha, outcome = ch_feces_SpecRich_5000_ASV_Y1, exposure_vec = pfas_vec), 
+    model_multi(data = bdd_alpha, outcome = ch_feces_Shannon_5000_ASV_Y1, exposure_vec = pfas_vec), 
+    model_multi(data = bdd_alpha, outcome = ch_feces_Faith_5000_ASV_Y1, exposure_vec = pfas_vec)), 
+  tab_spanner = c("**Specific richness**", "**Shannon diversity index**", "**Faith's phylogenetic diversity**"))
+
+table_alpha_pfas_2 <-                          # ici on a exclu ident 17673 pour PFHpS, PFHxS et PFOS car très gros outlier
+  tbl_merge(
+  tbls = list(
+    model_multi(data = bdd_alpha, outcome = ch_feces_SpecRich_5000_ASV_Y1, exposure_vec = pfas_vec_2),   
+    model_multi(data = bdd_alpha, outcome = ch_feces_Shannon_5000_ASV_Y1, exposure_vec = pfas_vec_2), 
+    model_multi(data = bdd_alpha, outcome = ch_feces_Faith_5000_ASV_Y1, exposure_vec = pfas_vec_2)), 
+  tab_spanner = c("**Specific richness**", "**Shannon diversity index**", "**Faith's phylogenetic diversity**"))
+
+table_alpha_pfas_3 <-                          # ici on a exclu ident 17673 pour PFHpS, PFHxS et PFOS car très gros outlier
+  tbl_merge(
+  tbls = list(
+    model_multi(data = bdd_alpha, outcome = ch_feces_SpecRich_5000_ASV_Y1, exposure_vec = pfas_vec_3),   
+    model_multi(data = bdd_alpha, outcome = ch_feces_Shannon_5000_ASV_Y1, exposure_vec = pfas_vec_3), 
+    model_multi(data = bdd_alpha, outcome = ch_feces_Faith_5000_ASV_Y1, exposure_vec = pfas_vec_3)), 
+  tab_spanner = c("**Specific richness**", "**Shannon diversity index**", "**Faith's phylogenetic diversity**"))
+
+```
+
+
+### Phthalates
+```{r}
+# Visualisation des résutats modèles simples et complets (seulement les expo d'intéret)
+table_phthalates_obs <- model_univ_multi(data = bdd_alpha, outcome = ch_feces_SpecRich_5000_ASV_Y1, exposure_vec = phthalates_vec)
+table_phthalates_sha <- model_univ_multi(data = bdd_alpha, outcome = ch_feces_Shannon_5000_ASV_Y1, exposure_vec = phthalates_vec)
+table_phthlates_fai <- model_univ_multi(data = bdd_alpha, outcome = ch_feces_Faith_5000_ASV_Y1, exposure_vec = phthalates_vec)
+
+
+# Tableau de résultats pour article
+table_alpha_phthalates <-                                 # ici on a seulement les métabolites
+  tbl_merge(
+  tbls = list(
+    model_multi(data = bdd_alpha, outcome = ch_feces_SpecRich_5000_ASV_Y1, exposure_vec = phthalates_vec), 
+    model_multi(data = bdd_alpha, outcome = ch_feces_Shannon_5000_ASV_Y1, exposure_vec = phthalates_vec), 
+    model_multi(data = bdd_alpha, outcome = ch_feces_Faith_5000_ASV_Y1, exposure_vec = phthalates_vec)), 
+  tab_spanner = c("**Specific richness**", "**Shannon diversity index**", "**Faith's phylogenetic diversity**"))
+
+table_alpha_phthalates_2 <-                              # ici on a les métabolites + les sommes molaires
+  tbl_merge(
+  tbls = list(
+    model_multi(data = bdd_alpha, outcome = ch_feces_SpecRich_5000_ASV_Y1, exposure_vec = phthalates_vec_2), 
+    model_multi(data = bdd_alpha, outcome = ch_feces_Shannon_5000_ASV_Y1, exposure_vec = phthalates_vec_2), 
+    model_multi(data = bdd_alpha, outcome = ch_feces_Faith_5000_ASV_Y1, exposure_vec = phthalates_vec_2)), 
+  tab_spanner = c("**Specific richness**", "**Shannon diversity index**", "**Faith's phylogenetic diversity**"))
+
+```
+
+
+## modèle de régréssion sur les taxons les plus abondants
+### Phenols
+```{r}
+# Visualisation des résutats modèles simples et complets (seulement les expo d'intéret)
+table_phenols_firmicutes <- model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_p1_Y1, exposure_vec = phenols_vec)
+table_phenols_actinobacteria <- model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_p2_Y1, exposure_vec = phenols_vec)
+table_phenols_bacteroidetes <- model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_p3_Y1, exposure_vec = phenols_vec)
+table_phenols_proteobacteria <- model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_p4_Y1, exposure_vec = phenols_vec)
+
+table_phenols_bifidobacterium <- model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_g1_Y1, exposure_vec = phenols_vec)
+table_phenols_bacteroides <- model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_g2_Y1, exposure_vec = phenols_vec)
+table_phenols_blautia <- model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_g3_Y1, exposure_vec = phenols_vec)
+table_phenols_escherichia_shigella <- model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_g4_Y1, exposure_vec = phenols_vec)
+
+
+# Tableau de résultats pour article
+table_phyla_phenols_2 <-                                 # ici on a les concentrations conjuguées pour BPA M2 et Y1, et MEPA Y1
+  tbl_merge(
+  tbls = list(
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p1_Y1, exposure_vec = phenols_vec_2), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p2_Y1, exposure_vec = phenols_vec_2), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p3_Y1, exposure_vec = phenols_vec_2), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p4_Y1, exposure_vec = phenols_vec_2)), 
+  tab_spanner = c("**Phylum Firmicutes**", "**Phylum Actinobacteria**", "**Phylum Bacteroidetes**", "**Phylum Proteobacteria**"))
+
+table_genera_phenols_2 <-                              # ici on a les concentrations conjuguées pour BPA M2 et Y1, et MEPA Y1
+  tbl_merge(
+  tbls = list(
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g1_Y1, exposure_vec = phenols_vec_2), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g2_Y1, exposure_vec = phenols_vec_2), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g3_Y1, exposure_vec = phenols_vec_2), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g4_Y1, exposure_vec = phenols_vec_2)), 
+  tab_spanner = c("**Genus Bifidobacterium**", "**Genus Bacteroides**", "**Genus Blautia**", "**Genera Eschericha / Shigella**"))
+
+
+```
+
+### PFAS
+```{r}
+# Visualisation des résutats modèles simples et complets (seulement les expo d'intéret)
+table_pfas_firmicutes <- model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_p1_Y1, exposure_vec = pfas_vec)
+table_pfas_actinobacteria <- model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_p2_Y1, exposure_vec = pfas_vec)
+table_pfas_bacteroidetes <- model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_p3_Y1, exposure_vec = pfas_vec)
+table_pfas_proteobacteria <- model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_p4_Y1, exposure_vec = pfas_vec)
+
+table_pfas_bifidobacterium <- model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_g1_Y1, exposure_vec = pfas_vec)
+table_pfas_bacteroides <- model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_g2_Y1, exposure_vec = pfas_vec)
+table_pfas_blautia <- model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_g3_Y1, exposure_vec = pfas_vec)
+table_pfas_escherichia_shigella <- model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_g4_Y1, exposure_vec = pfas_vec)
+
+# Tableau de résultats pour article
+table_phyla_pfas <-                                  # ici on a tous les indiv (aucun exclu)
+  tbl_merge(
+  tbls = list(
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p1_Y1, exposure_vec = pfas_vec), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p2_Y1, exposure_vec = pfas_vec), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p3_Y1, exposure_vec = pfas_vec), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p4_Y1, exposure_vec = pfas_vec)), 
+  tab_spanner = c("**Phylum Firmicutes**", "**Phylum Actinobacteria**", "**Phylum Bacteroidetes**", "**Phylum Proteobacteria**"))
+
+table_genera_pfas <-                                 # ici on a tous les indiv (aucun exclu)
+  tbl_merge(
+  tbls = list(
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g1_Y1, exposure_vec = pfas_vec), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g2_Y1, exposure_vec = pfas_vec), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g3_Y1, exposure_vec = pfas_vec), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g4_Y1, exposure_vec = pfas_vec)), 
+  tab_spanner = c("**Genus Bifidobacterium**", "**Genus Bacteroides**", "**Genus Blautia**", "**Genera Eschericha / Shigella**"))
+
+table_phyla_pfas_2 <-                             # ici on a exclu ident 17673 pour PFHpS, PFHxS et PFOS car très gros outlier
+  tbl_merge(
+  tbls = list(
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p1_Y1, exposure_vec = pfas_vec_2), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p2_Y1, exposure_vec = pfas_vec_2), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p3_Y1, exposure_vec = pfas_vec_2), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p4_Y1, exposure_vec = pfas_vec_2)), 
+  tab_spanner = c("**Phylum Firmicutes**", "**Phylum Actinobacteria**", "**Phylum Bacteroidetes**", "**Phylum Proteobacteria**"))
+
+table_genera_pfas_2 <-                           # ici on a exclu ident 17673 pour PFHpS, PFHxS et PFOS car très gros outlier
+  tbl_merge(
+  tbls = list(
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g1_Y1, exposure_vec = pfas_vec_2), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g2_Y1, exposure_vec = pfas_vec_2), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g3_Y1, exposure_vec = pfas_vec_2), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g4_Y1, exposure_vec = pfas_vec_2)), 
+  tab_spanner = c("**Genus Bifidobacterium**", "**Genus Bacteroides**", "**Genus Blautia**", "**Genera Eschericha / Shigella**"))
+
+table_phyla_pfas_3 <-                             # ici on a exclu ident 17673 pour PFHpS, PFHxS et PFOS car très gros outlier
+  tbl_merge(
+  tbls = list(
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p1_Y1, exposure_vec = pfas_vec_3), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p2_Y1, exposure_vec = pfas_vec_3), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p3_Y1, exposure_vec = pfas_vec_3), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p4_Y1, exposure_vec = pfas_vec_3)), 
+  tab_spanner = c("**Phylum Firmicutes**", "**Phylum Actinobacteria**", "**Phylum Bacteroidetes**", "**Phylum Proteobacteria**"))
+
+table_genera_pfas_3 <-                           # ici on a exclu ident 17673 pour PFHpS, PFHxS et PFOS car très gros outlier
+  tbl_merge(
+  tbls = list(
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g1_Y1, exposure_vec = pfas_vec_3), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g2_Y1, exposure_vec = pfas_vec_3), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g3_Y1, exposure_vec = pfas_vec_3), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g4_Y1, exposure_vec = pfas_vec_3)), 
+  tab_spanner = c("**Genus Bifidobacterium**", "**Genus Bacteroides**", "**Genus Blautia**", "**Genera Eschericha / Shigella**"))
+
+```
+
+### Phthalates
+```{r}
+# Visualisation des résutats modèles simples et complets (seulement les expo d'intéret)
+table_phthalates_firmicutes <- model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_p1_Y1, exposure_vec = phthalates_vec)
+table_phthalates_actinobacteria <- model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_p2_Y1, exposure_vec = phthalates_vec)
+table_phthalates_bacteroidetes <- model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_p3_Y1, exposure_vec = phthalates_vec)
+table_phthalates_proteobacteria <- model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_p4_Y1, exposure_vec = phthalates_vec)
+
+table_phthalates_bifidobacterium <- model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_g1_Y1, exposure_vec = phthalates_vec)
+table_phthalates_bacteroides <- model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_g2_Y1, exposure_vec = phthalates_vec)
+table_phthalates_blautia <- model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_g3_Y1, exposure_vec = phthalates_vec)
+table_phthalates_escherichia_shigella <- model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_g4_Y1, exposure_vec = phthalates_vec)
+
+
+# Tableau de résultats pour article
+table_phyla_phthalates <-                                     # ici on a seulement les métabolites
+  tbl_merge(
+  tbls = list(
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p1_Y1, exposure_vec = phthalates_vec), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p2_Y1, exposure_vec = phthalates_vec), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p3_Y1, exposure_vec = phthalates_vec), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p4_Y1, exposure_vec = phthalates_vec)), 
+  tab_spanner = c("**Phylum Firmicutes**", "**Phylum Actinobacteria**", "**Phylum Bacteroidetes**", "**Phylum Proteobacteria**"))
+
+table_genera_phthalates <-                                   # ici on a seulement les métabolites
+  tbl_merge(
+  tbls = list(
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g1_Y1, exposure_vec = phthalates_vec), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g2_Y1, exposure_vec = phthalates_vec), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g3_Y1, exposure_vec = phthalates_vec), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g4_Y1, exposure_vec = phthalates_vec)), 
+  tab_spanner = c("**Genus Bifidobacterium**", "**Genus Bacteroides**", "**Genus Blautia**", "**Genera Eschericha / Shigella**"))
+
+table_phyla_phthalates_2 <-                                 # ici on a les métabolites + les sommes molaires
+  tbl_merge(
+  tbls = list(
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p1_Y1, exposure_vec = phthalates_vec_2), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p2_Y1, exposure_vec = phthalates_vec_2), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p3_Y1, exposure_vec = phthalates_vec_2), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p4_Y1, exposure_vec = phthalates_vec_2)), 
+  tab_spanner = c("**Phylum Firmicutes**", "**Phylum Actinobacteria**", "**Phylum Bacteroidetes**", "**Phylum Proteobacteria**"))
+
+table_genera_phthalates_2 <-                                # ici on a les métabolites + les sommes molaires
+  tbl_merge(
+  tbls = list(
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g1_Y1, exposure_vec = phthalates_vec_2), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g2_Y1, exposure_vec = phthalates_vec_2), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g3_Y1, exposure_vec = phthalates_vec_2), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g4_Y1, exposure_vec = phthalates_vec_2)), 
+  tab_spanner = c("**Genus Bifidobacterium**", "**Genus Bacteroides**", "**Genus Blautia**", "**Genera Eschericha / Shigella**"))
+
+```
+
+
+
+## vérification des hypothèses
+### normalité des résidus 
+```{r}
+# Seulement pour ceux pour lequels on a des doutes sur les associations 
+model_summary(data = bdd_alpha, outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$ch_BUPA_total_cat_M2_2)
+model_summary(data = bdd_alpha, outcome = bdd_alpha$ch_feces_Shannon_5000_ASV_Y1, exposure = bdd_alpha$ch_BUPA_total_cat_M2_2)
+model_summary(data = bdd_alpha, outcome = bdd_alpha$ch_feces_Faith_5000_ASV_Y1, exposure = bdd_alpha$ch_BUPA_total_cat_M2_2)
+
+model_summary(data = bdd_alpha, outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, exposure = bdd_alpha$ch_BPS_total_cat_M2_2)
+model_summary(data = bdd_alpha, outcome = bdd_alpha$ch_feces_Shannon_5000_ASV_Y1, exposure = bdd_alpha$ch_BPS_total_cat_M2_2)
+model_summary(data = bdd_alpha, outcome = bdd_alpha$ch_feces_Faith_5000_ASV_Y1, exposure = bdd_alpha$ch_BPS_total_cat_M2_2)
+
+```
+
+### non multicolinéarité des variables prédictives
+```{r}
+library(car)
+test_coli <-
+  lm(
+    ch_feces_SpecRich_5000_ASV_Y1 ~
+      mo_MEPA_total_i_cor_t2_ln +
+      ch_feces_RUN_Y1 +
+      ch_feces_age_w_Y1_i +
+      po_delmod +
+      ch_food_intro_Y1_3cat_i +
+      ch_antibio_Y1_2cat_i +
+      mo_par_2cat +
+      mo_pets_i +
+      ch_sex +
+      mo_tob_gr_anyt_yn_n2_i +
+      Mo_ETS_anyT_yn1_opt_i +
+      ch_ETS_12m_opt36m +
+      mo_interpreg_3cat +
+      mo_dipl_3cat_i +
+      po_w_kg_3cat +
+      po_he_3cat_i +
+      ch_w_Y1_3cat_i +
+      ch_he_Y1_3cat_i +
+      po_gd +
+      mo_age +
+      mo_bmi_bepr_3cat_i +
+      bf_duration_till48w_4cat_i,
+    data = bdd_alpha
+  )
+tbl_regression(test_coli) %>% add_global_p(keep = TRUE, singular.ok = TRUE)
+vif(test_coli)
+covar_cormat <- metadata[, covar_vec_num_i]
+heatmap_cor(cormat = covar_cormat)
+```
+
+
+# Analyses de sensibilité 
+## Raréfaction 
+```{r}
+# Préparation des données ----
+bdd_sensi_rare <- bdd_alpha %>% filter(!is.na(ch_feces_SpecRich_10000_ASV_Y1))
+pollutants_signi <- bdd_alpha %>% 
+  select(mo_ETPA_total_i_cor_t3_ln, 
+         ch_PRPA_total_i_cor_Y1_ln, 
+         ch_BUPA_total_cat_M2_2, 
+         mo_BPA_total_i_cor_t3_ln, 
+         ch_BPS_total_cat_M2_2, 
+         mo_OXBE_total_i_cor_t2_ln) %>% colnames()
+```
+
+### Phénols
+```{r}
+# Tableaux complets (avec toutes les expositions) ----
+sensi_obs_rare_phenols <-    
+  tbl_merge(
+    tbls = list(model_multi(exposure_vec = phenols_vec_2, outcome = ch_feces_SpecRich_5000_ASV_Y1, data = bdd_alpha), 
+                model_multi(exposure_vec = phenols_vec_2, outcome = ch_feces_SpecRich_5000_ASV_Y1, data = bdd_sensi_rare), 
+                model_multi(exposure_vec = phenols_vec_2, outcome = ch_feces_SpecRich_10000_ASV_Y1, data = bdd_sensi_rare)),       
+    tab_spanner = c("**Threshold 5,000 (n=350)**", "**Threshold 5,000 (n=339)**", "**Threshold 10,000 (n=339)**"))
+
+sensi_sha_rare_phenols <-    
+  tbl_merge(
+    tbls = list(model_multi(exposure_vec = phenols_vec_2, outcome = ch_feces_Shannon_5000_ASV_Y1, data = bdd_alpha), 
+                model_multi(exposure_vec = phenols_vec_2, outcome = ch_feces_Shannon_5000_ASV_Y1, data = bdd_sensi_rare), 
+                model_multi(exposure_vec = phenols_vec_2, outcome = ch_feces_Shannon_10000_ASV_Y1, data = bdd_sensi_rare)),       
+    tab_spanner = c("**Threshold 5,000 (n=350)**", "**Threshold 5,000 (n=339)**", "**Threshold 10,000 (n=339)**"))
+
+sensi_fai_rare_phenols <-    
+  tbl_merge(
+    tbls = list(model_multi(exposure_vec = phenols_vec_2, outcome = ch_feces_Faith_5000_ASV_Y1, data = bdd_alpha), 
+                model_multi(exposure_vec = phenols_vec_2, outcome = ch_feces_Faith_5000_ASV_Y1, data = bdd_sensi_rare), 
+                model_multi(exposure_vec = phenols_vec_2, outcome = ch_feces_Faith_10000_ASV_Y1, data = bdd_sensi_rare)), 
+    tab_spanner = c("**Threshold 5,000 (n=350)**", "**Threshold 5,000 (n=339)**", "**Threshold 10,000 (n=339)**"))
+```
+
+```{r}
+# Tableaux complets (expositions significatives) ----
+sensi_obs_rare_phenols <-    
+  tbl_merge(
+    tbls = list(model_multi(exposure_vec = pollutants_signi , outcome = ch_feces_SpecRich_5000_ASV_Y1, data = bdd_alpha), 
+                model_multi(exposure_vec = pollutants_signi , outcome = ch_feces_SpecRich_5000_ASV_Y1, data = bdd_sensi_rare), 
+                model_multi(exposure_vec = pollutants_signi , outcome = ch_feces_SpecRich_10000_ASV_Y1, data = bdd_sensi_rare)),       
+    tab_spanner = c("**Threshold 5,000 (n=350)**", "**Threshold 5,000 (n=339)**", "**Threshold 10,000 (n=339)**"))
+
+sensi_sha_rare_phenols <-    
+  tbl_merge(
+    tbls = list(model_multi(exposure_vec = pollutants_signi , outcome = ch_feces_Shannon_5000_ASV_Y1, data = bdd_alpha), 
+                model_multi(exposure_vec = pollutants_signi , outcome = ch_feces_Shannon_5000_ASV_Y1, data = bdd_sensi_rare), 
+                model_multi(exposure_vec = pollutants_signi , outcome = ch_feces_Shannon_10000_ASV_Y1, data = bdd_sensi_rare)),       
+    tab_spanner = c("**Threshold 5,000 (n=350)**", "**Threshold 5,000 (n=339)**", "**Threshold 10,000 (n=339)**"))
+
+sensi_fai_rare_phenols <-    
+  tbl_merge(
+    tbls = list(model_multi(exposure_vec = pollutants_signi , outcome = ch_feces_Faith_5000_ASV_Y1, data = bdd_alpha), 
+                model_multi(exposure_vec = pollutants_signi , outcome = ch_feces_Faith_5000_ASV_Y1, data = bdd_sensi_rare), 
+                model_multi(exposure_vec = pollutants_signi, outcome = ch_feces_Faith_10000_ASV_Y1, data = bdd_sensi_rare)), 
+    tab_spanner = c("**Threshold 5,000 (n=350)**", "**Threshold 5,000 (n=339)**", "**Threshold 10,000 (n=339)**"))
+```
+
+### PFAS
+```{r}
+# Tableaux complets (avec toutes les expositions) ----
+sensi_obs_rare_pfas <-    
+  tbl_merge(
+    tbls = list(model_multi(exposure_vec = pfas_vec, outcome = ch_feces_SpecRich_5000_ASV_Y1, data = bdd_alpha), 
+                model_multi(exposure_vec = pfas_vec, outcome = ch_feces_SpecRich_5000_ASV_Y1, data = bdd_sensi_rare), 
+                model_multi(exposure_vec = pfas_vec, outcome = ch_feces_SpecRich_10000_ASV_Y1, data = bdd_sensi_rare)),       
+    tab_spanner = c("**Threshold 5,000 (n=350)**", "**Threshold 5,000 (n=339)**", "**Threshold 10,000 (n=339)**"))
+
+sensi_sha_rare_pfas <-    
+  tbl_merge(
+    tbls = list(model_multi(exposure_vec = pfas_vec, outcome = ch_feces_Shannon_5000_ASV_Y1, data = bdd_alpha), 
+                model_multi(exposure_vec = pfas_vec, outcome = ch_feces_Shannon_5000_ASV_Y1, data = bdd_sensi_rare), 
+                model_multi(exposure_vec = pfas_vec, outcome = ch_feces_Shannon_10000_ASV_Y1, data = bdd_sensi_rare)),       
+    tab_spanner = c("**Threshold 5,000 (n=350)**", "**Threshold 5,000 (n=339)**", "**Threshold 10,000 (n=339)**"))
+
+sensi_fai_rare_pfas <-    
+  tbl_merge(
+    tbls = list(model_multi(exposure_vec = pfas_vec, outcome = ch_feces_Faith_5000_ASV_Y1, data = bdd_alpha), 
+                model_multi(exposure_vec = pfas_vec, outcome = ch_feces_Faith_5000_ASV_Y1, data = bdd_sensi_rare), 
+                model_multi(exposure_vec = pfas_vec, outcome = ch_feces_Faith_10000_ASV_Y1, data = bdd_sensi_rare)), 
+    tab_spanner = c("**Threshold 5,000 (n=350)**", "**Threshold 5,000 (n=339)**", "**Threshold 10,000 (n=339)**"))
+```
+
+### Phthalates
+```{r}
+# Tableaux complets (avec toutes les expositions) ----
+sensi_obs_rare_phthalates <-    
+  tbl_merge(
+    tbls = list(model_multi(exposure_vec = phthalates_vec_2, outcome = ch_feces_SpecRich_5000_ASV_Y1, data = bdd_alpha), 
+                model_multi(exposure_vec = phthalates_vec_2, outcome = ch_feces_SpecRich_5000_ASV_Y1, data = bdd_sensi_rare), 
+                model_multi(exposure_vec = phthalates_vec_2, outcome = ch_feces_SpecRich_10000_ASV_Y1, data = bdd_sensi_rare)),       
+    tab_spanner = c("**Threshold 5,000 (n=350)**", "**Threshold 5,000 (n=339)**", "**Threshold 10,000 (n=339)**"))
+
+sensi_sha_rare_phthalates <-    
+  tbl_merge(
+    tbls = list(model_multi(exposure_vec = phthalates_vec_2, outcome = ch_feces_Shannon_5000_ASV_Y1, data = bdd_alpha), 
+                model_multi(exposure_vec = phthalates_vec_2, outcome = ch_feces_Shannon_5000_ASV_Y1, data = bdd_sensi_rare), 
+                model_multi(exposure_vec = phthalates_vec_2, outcome = ch_feces_Shannon_10000_ASV_Y1, data = bdd_sensi_rare)),       
+    tab_spanner = c("**Threshold 5,000 (n=350)**", "**Threshold 5,000 (n=339)**", "**Threshold 10,000 (n=339)**"))
+
+sensi_fai_rare_phthalates <-    
+  tbl_merge(
+    tbls = list(model_multi(exposure_vec = phthalates_vec_2, outcome = ch_feces_Faith_5000_ASV_Y1, data = bdd_alpha), 
+                model_multi(exposure_vec = phthalates_vec_2, outcome = ch_feces_Faith_5000_ASV_Y1, data = bdd_sensi_rare), 
+                model_multi(exposure_vec = phthalates_vec_2, outcome = ch_feces_Faith_10000_ASV_Y1, data = bdd_sensi_rare)), 
+    tab_spanner = c("**Threshold 5,000 (n=350)**", "**Threshold 5,000 (n=339)**", "**Threshold 10,000 (n=339)**"))
+```
+
+
+## Outliers pfas ident 17673
+```{r}
+# Préparation des données ----
+pfas_vec_inclu17673 <- c("mo_PFHxS_cor_ln", "mo_PFOS_cor_ln", "mo_PFHpS_i_cor_ln")
+pfas_vec_inclu_17673_new <- c("mo_PFHxS_cor_ln_new", "mo_PFOS_cor_ln_new", "mo_PFHpS_i_cor_ln_new")
+pfas_vec_exclu17673 <- c("mo_PFHxS_cor_ln_exclu17673", "mo_PFOS_cor_ln_exclu17673", "mo_PFHpS_i_cor_ln_exclu17673")
+pfas_vec_exclu17673_new <- c("mo_PFHxS_cor_ln_exclu17673_new", "mo_PFOS_cor_ln_exclu17673_new", "mo_PFHpS_i_cor_ln_exclu17673_new")
+
+pfas_vec_17673 <- c("mo_PFHxS_cor_ln", "mo_PFHxS_cor_ln_exclu17673", "mo_PFHxS_cor_ter", "mo_PFHxS_cor_ln_new", "mo_PFHxS_cor_ln_new_exclu17673",
+                    "mo_PFOS_cor_ln", "mo_PFOS_cor_ln_exclu17673","mo_PFOS_cor_ter", "mo_PFOS_cor_ln_new", "mo_PFOS_cor_ln_new_exclu17673",
+                    "mo_PFHpS_i_cor_ln", "mo_PFHpS_i_cor_ln_exclu17673", "mo_PFHpS_i_cor_ter", "mo_PFHpS_i_cor_ln_new", "mo_PFHpS_i_cor_ln_new_exclu17673")
+
+
+# Visualisation des données ----
+metadata %>% densityplot(vars = pfas_vec_inclu17673)
+metadata %>% histogram(vars = pfas_vec_inclu17673)
+metadata %>% boxplot(vars = pfas_vec_inclu17673)
+metadata %>% descrip_num(vars = pfas_vec_inclu17673)
+
+metadata %>% densityplot(vars = pfas_vec_exclu17673)
+metadata %>% histogram(vars = pfas_vec_exclu17673)
+metadata %>% boxplot(vars = pfas_vec_exclu17673)
+metadata %>% descrip_num(vars = pfas_vec_exclu17673)
+
+bdd_alpha %>%
+  filter(!is.na(ch_feces_ACE_5000_ASV_Y1)) %>% 
+  descrip_num(c(pfas_vec_inclu17673, pfas_vec_exclu17673, pfas_vec_inclu_new)) %>%
+  write.table("~/R/GUMME/pollutants_gut_microbiota_Y1_20220601/4_output/table_pfas_inclu_exclu17673.csv", 
+            row.names = FALSE, 
+            sep =";", 
+            dec = ".")
+
+
+# Tableux de résultats ----
+sensi_outliers_alpha_pfas <- tbl_merge(
+  tbls = list(
+    model_multi(outcome = ch_feces_SpecRich_5000_ASV_Y1, exposure_vec = pfas_vec_17673, data = bdd_alpha),
+    model_multi(outcome = ch_feces_Shannon_5000_ASV_Y1, exposure_vec = pfas_vec_17673, data = bdd_alpha),
+    model_multi(outcome = ch_feces_Faith_5000_ASV_Y1, exposure_vec = pfas_vec_17673, data = bdd_alpha)
+  ),
+  tab_spanner = c("**Specific richness**",  "**Shannon diversity index**", "**Faith's phylogenetic index**"))
+
+
+sensi_outliers_phyla_pfas <- tbl_merge(
+  tbls = list(
+    model_multi(outcome = ch_feces_rel_p1_Y1, exposure_vec = pfas_vec_17673, data = bdd_taxa),
+    model_multi(outcome = ch_feces_rel_p2_Y1, exposure_vec = pfas_vec_17673, data = bdd_taxa),
+    model_multi(outcome = ch_feces_rel_p3_Y1, exposure_vec = pfas_vec_17673, data = bdd_taxa),
+    model_multi(outcome = ch_feces_rel_p4_Y1, exposure_vec = pfas_vec_17673, data = bdd_taxa)
+  ),
+  tab_spanner = c("**Phylum Firmicutes**", "**Phylum Actinobacteria**", "**Phylum Bacteroidetes**", "**Phylum Proteobacteria**"))
+
+sensi_outliers_genera_pfas <- tbl_merge(
+  tbls = list(
+    model_multi(outcome = ch_feces_rel_g1_Y1, exposure_vec = pfas_vec_17673, data = bdd_taxa),
+    model_multi(outcome = ch_feces_rel_g2_Y1, exposure_vec = pfas_vec_17673, data = bdd_taxa),
+    model_multi(outcome = ch_feces_rel_g3_Y1, exposure_vec = pfas_vec_17673, data = bdd_taxa),
+    model_multi(outcome = ch_feces_rel_g4_Y1, exposure_vec = pfas_vec_17673, data = bdd_taxa)
+  ),
+  tab_spanner = c("**Genus Bifidobacterium**", "**Genus Bacteroides**", "**Genus Blautia**", "**Genera Eschericha / Shigella**"))
+
+
+
+```
+
+## Gravité spécifique 
+### Corrélations
+Polluants i_cor VS xx_pool_sg_xx
+```{r}
+# Tableaux de corrélation polluant i_cor VS xx_pool_sg_xx 
+table_phenols_i_cor_VS_pool_sg <- list(
+  table_cor(data = metadata, var = mo_pool_sg_T1, vars = phenols_vec_num_t2),
+  table_cor(data = metadata, var = mo_pool_sg_T3, vars = phenols_vec_num_t3),
+  table_cor(data = metadata, var = ch_pool_sg_M2_2, vars = phenols_vec_num_M2),
+  table_cor(data = metadata, var = ch_pool_sg_Y1, vars = phenols_vec_num_Y1))
+
+write.xlsx(table_phenols_i_cor_VS_pool_sg, 
+           "~/R/GUMME/pollutants_gut_microbiota_Y1_20220601/4_output/table_phenols_i_cor_VS_pool_sg.xlsx", 
+           rowNames = TRUE)
+metadata %>% 
+  filter(!is.na(mo_pool_sg_T1)) %>%
+  select(all_of(phenols_vec_num_t2)) %>% 
+  tbl_summary( statistic = all_continuous()~ "{N_nonmiss}")
+
+table_phthalates_i_cor_VS_pool_sg <- list(
+  table_cor(data = metadata, var = mo_pool_sg_T1, vars = phthalates_vec_num_t2), 
+  table_cor(data = metadata, var = mo_pool_sg_T3, vars = phthalates_vec_num_t3),
+  table_cor(data = metadata, var = ch_pool_sg_M2_2, vars = phthalates_vec_num_M2),
+  table_cor(data = metadata, var = ch_pool_sg_Y1, vars = phthalates_vec_num_Y1))
+
+write.xlsx(table_phthalates_i_cor_VS_pool_sg, 
+           "~/R/GUMME/pollutants_gut_microbiota_Y1_20220601/4_output/table_phthalates_i_cor_VS_pool_sg.xlsx", 
+           append = TRUE,
+           rowNames = TRUE)
+metadata %>% 
+  filter(!is.na(mo_pool_sg_T1)) %>%
+  select(all_of(phthalates_vec_num_t2)) %>% 
+  tbl_summary(statistic = all_continuous()~ "{N_nonmiss}")
+metadata %>% 
+  filter(!is.na(mo_pool_sg_T3)) %>%
+  select(all_of(phthalates_vec_num_t3)) %>% 
+  tbl_summary(statistic = all_continuous()~ "{N_nonmiss}")
+metadata %>% 
+  filter(!is.na(ch_pool_sg_M2_2)) %>%
+  select(all_of(phthalates_vec_num_M2)) %>% 
+  tbl_summary(statistic = all_continuous()~ "{N_nonmiss}", 
+              missing = "no")
+metadata %>% 
+  filter(!is.na(ch_pool_sg_Y1)) %>%
+  select(all_of(phthalates_vec_num_Y1)) %>% 
+  tbl_summary(statistic = all_continuous()~ "{N_nonmiss}", 
+              missing = "no")
+
+```
+
+
+Polluants i_cor VS polluants i_cor_sg
+```{r}
+# Tableaux corrélations i_cor VS i_cor_sg
+write.table(table_cor_sg(data = metadata, exposure_vec = phenols_vec_num, exposure_vec_sg = phenols_vec_num_sg),
+            "~/R/GUMME/pollutants_gut_microbiota_Y1_20220601/4_output/table_phenols_i_cor_VS_i_cor_sg.csv", 
+            row.names = FALSE, 
+            sep =";", 
+            dec = ".")
+
+table_phthalates_i_cor_VS_i_cor_sg <- list(
+  table_cor_sg(data = metadata, exposure_vec = phthalates_vec_num_t2, exposure_vec_sg = phthalates_vec_num_sg_t2),
+  table_cor_sg(data = metadata, exposure_vec = phthalates_vec_num_t3, exposure_vec_sg = phthalates_vec_num_sg_t3),
+  table_cor_sg(data = metadata, exposure_vec = phthalates_vec_num_M2, exposure_vec_sg = phthalates_vec_num_sg_M2),
+  table_cor_sg(data = metadata, exposure_vec = phthalates_vec_num_Y1, exposure_vec_sg = phthalates_vec_num_sg_Y1)
+)
+write.xlsx(table_phthalates_i_cor_VS_i_cor_sg,
+            "~/R/GUMME/pollutants_gut_microbiota_Y1_20220601/4_output/table_phthalates_i_cor_VS_i_cor_sg.xlsx", 
+            rowNames = TRUE)
+
+metadata %>% select(all_of(phthalates_vec_num_t2)) %>% tbl_summary(statistic = all_continuous()~ "{N_nonmiss}", missing = "no") 
+metadata %>% select(all_of(phthalates_vec_num_t3)) %>% tbl_summary(statistic = all_continuous()~ "{N_nonmiss}", missing = "no") 
+metadata %>% select(all_of(phthalates_vec_num_M2)) %>% tbl_summary(statistic = all_continuous()~ "{N_nonmiss}", missing = "no") 
+metadata %>% select(all_of(phthalates_vec_num_Y1)) %>% tbl_summary(statistic = all_continuous()~ "{N_nonmiss}", missing = "no") 
+metadata %>% select(all_of(phthalates_vec_num_sg_t2)) %>% tbl_summary(statistic = all_continuous()~ "{N_nonmiss}", missing = "no") 
+metadata %>% select(all_of(phthalates_vec_num_sg_t3)) %>% tbl_summary(statistic = all_continuous()~ "{N_nonmiss}", missing = "no") 
+metadata %>% select(all_of(phthalates_vec_num_sg_M2)) %>% tbl_summary(statistic = all_continuous()~ "{N_nonmiss}", missing = "no") 
+metadata %>% select(all_of(phthalates_vec_num_sg_Y1)) %>% tbl_summary(statistic = all_continuous()~ "{N_nonmiss}", missing = "no") 
+
+# Heatmap de corrélation i_cor VS i_cor_sg
+heatmap_cor_pairwise(data = metadata, vars_1 = phenols_vec_num, vars_2 = phenols_vec_num_sg)
+heatmap_cor_pairwise(data = metadata, vars_1 = phthalates_vec_num_t2, vars_2 = phthalates_vec_num_sg_t2)
+heatmap_cor_pairwise(data = metadata, vars_1 = phthalates_vec_num_t3, vars_2 = phthalates_vec_num_sg_t3)
+heatmap_cor_pairwise(data = metadata, vars_1 = phthalates_vec_num_M2, vars_2 = phthalates_vec_num_sg_M2)
+heatmap_cor_pairwise(data = metadata, vars_1 = phthalates_vec_num_Y1, vars_2 = phthalates_vec_num_sg_Y1)
+```
+
+
+### Effet de la variable gravité spécifique seule sur les outcomes microbiote
+```{r}
+# Description
+descrip_num(data = metadata, vars = sg_vec)
+histogram(data = metadata, vars = sg_vec)
+boxplot(data = metadata, vars = sg_vec)
+densityplot(data = metadata, vars = sg_vec)
+
+outliers(data = metadata, var = mo_pool_sg_T1)
+outliers(data = metadata, var = mo_pool_sg_T3)
+outliers(data = metadata, var = ch_pool_sg_M2)
+outliers(data = metadata, var = ch_pool_sg_M2_2)
+outliers(data = metadata, var = ch_pool_sg_Y1)
+
+descrip_num(data = metadata, vars = sg_vec_2)
+histogram(data = metadata, vars = sg_vec_2)
+boxplot(data = metadata, vars = sg_vec_2)
+densityplot(data = metadata, vars = sg_vec_2)
+
+
+scatterplot(data = bdd_alpha, 
+            outcome = ch_feces_SpecRich_5000_ASV_Y1, 
+            vars = c("mo_MnBP_i_cor_t2_ln", "mo_MnBP_i_cor_sg_t2_ln"))
+scatterplot(data = bdd_alpha, 
+            outcome = ch_feces_SpecRich_5000_ASV_Y1, 
+            vars = c("mo_MnBP_i_cor_t3_ln", "mo_MnBP_i_cor_sg_t3_ln"))
+scatterplot(data = bdd_alpha, 
+            outcome = ch_feces_SpecRich_5000_ASV_Y1, 
+            vars = c("ch_MnBP_i_cor_M2_ln", "ch_MnBP_i_cor_sg_M2_ln"))
+scatterplot(data = bdd_alpha, 
+            outcome = ch_feces_SpecRich_5000_ASV_Y1, 
+            vars = c("ch_MnBP_i_cor_Y1_ln", "ch_MnBP_i_cor_sg_Y1_ln"))
+scatterplot(data = bdd_alpha, 
+            outcome = ch_feces_Shannon_5000_ASV_Y1, 
+            vars = c("ch_MnBP_i_cor_Y1_ln", "ch_MnBP_i_cor_sg_Y1_ln"))
+
+
+
+# Statistiques 
+sensi_sg_alpha <- tbl_merge(
+  tbls = list(
+    model_univ_multi(data = bdd_alpha, outcome = ch_feces_SpecRich_5000_ASV_Y1, exposure_vec = sg_vec_2), 
+    model_univ_multi(data = bdd_alpha, outcome = ch_feces_Shannon_5000_ASV_Y1, exposure_vec = sg_vec_2), 
+    model_univ_multi(data = bdd_alpha, outcome = ch_feces_Faith_5000_ASV_Y1, exposure_vec = sg_vec_2)
+  ), 
+  tab_spanner = c("Specific richness", "Shannon", "Faith"))
+
+sensi_sg_phyla <- tbl_merge(
+  tbls = list(
+    model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_p1_Y1, exposure_vec = sg_vec_2), 
+    model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_p2_Y1, exposure_vec = sg_vec_2), 
+    model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_p3_Y1, exposure_vec = sg_vec_2), 
+    model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_p4_Y1, exposure_vec = sg_vec_2)
+  ), 
+  tab_spanner = c("**Phylum Firmicutes**", "**Phylum Actinobacteria**", "**Phylum Bacteroidetes**", "**Phylum Proteobacteria**"))
+
+sensi_sg_genera <- tbl_merge(
+  tbls = list(
+    model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_g1_Y1, exposure_vec = sg_vec_2), 
+    model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_g2_Y1, exposure_vec = sg_vec_2), 
+    model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_g3_Y1, exposure_vec = sg_vec_2), 
+    model_univ_multi(data = bdd_taxa, outcome = ch_feces_rel_g4_Y1, exposure_vec = sg_vec_2)
+  ), 
+  tab_spanner = c("**Genus Bifidobacterium**", "**Genus Bacteroides**", "**Genus Blautia**", "**Genera Eschericha / Shigella**"))
+
+
+
+sg_vec_num_ter <- c("mo_pool_sg_T1_2", "mo_pool_sg_T1_2_ter", 
+                    "mo_pool_sg_T3_2", "mo_pool_sg_T3_2_ter",
+                    "ch_pool_sg_M2_2", "ch_pool_sg_M2_2_ter",
+                    "ch_pool_sg_Y1_2", "ch_pool_sg_Y1_2_ter")
+
+sensi_sg_alpha_ter <- tbl_merge(
+  tbls = list(
+    model_univ_multi(data = bdd_alpha, outcome = ch_feces_SpecRich_5000_ASV_Y1, exposure_vec = sg_vec_num_ter), 
+    model_univ_multi(data = bdd_alpha, outcome = ch_feces_Shannon_5000_ASV_Y1, exposure_vec = sg_vec_num_ter), 
+    model_univ_multi(data = bdd_alpha, outcome = ch_feces_Faith_5000_ASV_Y1, exposure_vec = sg_vec_num_ter)), 
+  tab_spanner = c("Specific richness", "Shannon", "Faith"))
+
+# AIC 
+library(AICcmodavg)
+
+
+```
+
+
+### Effet de l'ajustement sur la sg pour les Phénols 
+```{r}
+# Description
+metadata %>% descrip_num(vars = c(phenols_vec_num, phenols_vec_num_sg, 
+                                  phenols_vec_ln, phenols_vec_num_sg_ln)) %>%
+  write.table("~/R/table_phenols_descrip_sg.csv", 
+            row.names = FALSE, 
+            sep =";", 
+            dec = ".")
+
+metadata %>% descrip_num(vars = c(phthalates_vec_num, phthalates_vec_num_sg, 
+                                  phthalates_vec_ln, phthalates_vec_num_sg_ln))%>%
+  write.table("~/R/table_phthalates_descrip_sg.csv", 
+            row.names = FALSE, 
+            sep =";", 
+            dec = ".")
+
+# Statistiques 
+sensi_sg_alpha_phenols <-
+  tbl_merge(
+    tbls = list(
+      model_multi(data = bdd_alpha, outcome = ch_feces_SpecRich_5000_ASV_Y1, exposure_vec = phenols_vec_ln), 
+      model_multi(data = bdd_alpha, outcome = ch_feces_SpecRich_5000_ASV_Y1, exposure_vec = phenols_vec_sg_ln), 
+      
+      model_multi(data = bdd_alpha, outcome = ch_feces_Shannon_5000_ASV_Y1, exposure_vec = phenols_vec_ln), 
+      model_multi(data = bdd_alpha, outcome = ch_feces_Shannon_5000_ASV_Y1, exposure_vec = phenols_vec_sg_ln), 
+      
+      model_multi(data = bdd_alpha, outcome = ch_feces_Faith_5000_ASV_Y1, exposure_vec = phenols_vec_ln), 
+      model_multi(data = bdd_alpha, outcome = ch_feces_Faith_5000_ASV_Y1, exposure_vec = phenols_vec_sg_ln)), 
+    tab_spanner = c(
+      "**Specific richness, principal analysis, fully adjusted**", 
+      "**Specific richness, sensitivity analysis, fully adjusted + sg**", 
+      "**Shannon diversity, principal analysis, fully adjusted**", 
+      "**Shannon diversity, sensitivity analysis, fully adjusted + sg**", 
+      "**Faith diversity, principal analysis, fully adjusted**", 
+      "**Faith diversity, sensitivity analysis, fully adjusted + sg**"))
+
+sensi_sg_phyla_phenols <- tbl_merge(
+  tbls = list(
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p1_Y1, exposure_vec = phenols_vec_ln), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p1_Y1, exposure_vec = phenols_vec_sg_ln), 
+      
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p2_Y1, exposure_vec = phenols_vec_ln), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p2_Y1, exposure_vec = phenols_vec_sg_ln), 
+      
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p3_Y1, exposure_vec = phenols_vec_ln), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p3_Y1, exposure_vec = phenols_vec_sg_ln), 
+      
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p4_Y1, exposure_vec = phenols_vec_ln), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p4_Y1, exposure_vec = phenols_vec_sg_ln)), 
+    tab_spanner = c(
+      "**Phylum Firmicutes, principal analysis, fully adjusted**",
+      "**Phylum Firmicutes, sensitivity analysis, fully adjusted + sg**", 
+      "**Phylum Actinobacteria, principal analysis, fully adjusted**",
+      "**Phylum Actinobacteria, sensitivity analysis, fully adjusted + sg**", 
+      "**Phylum Bacteroidetes, principal analysis, fully adjusted**",
+      "**Phylum Bacteroidetes, sensitivity analysis, fully adjusted + sg**", 
+      "**Phylum Proteobacteria, principal analysis, fully adjusted**",
+      "**Phylum Proteobacteria, sensitivity analysis, fully adjusted + sg**"))
+
+
+sensi_sg_genera_phenols <- tbl_merge(
+  tbls = list(
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g1_Y1, exposure_vec = phenols_vec_ln), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g1_Y1, exposure_vec = phenols_vec_sg_ln), 
+      
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g2_Y1, exposure_vec = phenols_vec_ln), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g2_Y1, exposure_vec = phenols_vec_sg_ln), 
+      
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g3_Y1, exposure_vec = phenols_vec_ln), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g3_Y1, exposure_vec = phenols_vec_sg_ln), 
+      
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g4_Y1, exposure_vec = phenols_vec_ln), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g4_Y1, exposure_vec = phenols_vec_sg_ln)), 
+    tab_spanner = c(
+      "**Genus Bifidobacterium, principal analysis, fully adjusted**",
+      "**Genus Bifidobacterium, sensitivity analysis, fully adjusted + sg**", 
+      "**Genus Bacteroides, principal analysis, fully adjusted**",
+      "**Genus Bacteroides, sensitivity analysis, fully adjusted + sg**", 
+      "**Genus Blautia, principal analysis, fully adjusted**",
+      "**Genus Blautia, sensitivity analysis, fully adjusted + sg**", 
+      "**Genera Eschericha / Shigella, principal analysis, fully adjusted**",
+      "**Genera Eschericha / Shigella, sensitivity analysis, fully adjusted + sg**"
+    ))
+
+
+
+```
+
+### Effet de l'ajustement sur la sg pour les Phthalates 
+```{r}
+# Description
+descrip_num(data = metadata, vars = phthalates_vec_num)
+descrip_num(data = metadata, vars = phthalates_vec_num_sg)
+
+# Statistiques 
+## Analyses principales ln(i_cor) vs analyses de sensibilité ln(i_cor_sg)
+sensi_sg_alpha_phthalates <-
+  tbl_merge(
+    tbls = list(
+      model_multi(data = bdd_alpha, outcome = ch_feces_SpecRich_5000_ASV_Y1, exposure_vec = phthalates_vec_ln), 
+      model_multi(data = bdd_alpha, outcome = ch_feces_SpecRich_5000_ASV_Y1, exposure_vec = phthalates_vec_sg_ln), 
+      
+      model_multi(data = bdd_alpha, outcome = ch_feces_Shannon_5000_ASV_Y1, exposure_vec = phthalates_vec_ln), 
+      model_multi(data = bdd_alpha, outcome = ch_feces_Shannon_5000_ASV_Y1, exposure_vec = phthalates_vec_sg_ln), 
+      
+      model_multi(data = bdd_alpha, outcome = ch_feces_Faith_5000_ASV_Y1, exposure_vec = phthalates_vec_ln), 
+      model_multi(data = bdd_alpha, outcome = ch_feces_Faith_5000_ASV_Y1, exposure_vec = phthalates_vec_sg_ln)), 
+    tab_spanner = c(
+      "**Specific richness, principal analysis, fully adjusted**", 
+      "**Specific richness, sensitivity analysis, fully adjusted + sg**", 
+      "**Shannon diversity, principal analysis, fully adjusted**", 
+      "**Shannon diversity, sensitivity analysis, fully adjusted + sg**", 
+      "**Faith diversity, principal analysis, fully adjusted**", 
+      "**Faith diversity, sensitivity analysis, fully adjusted + sg**"))
+
+sensi_sg_phyla_phthalates <- tbl_merge(
+  tbls = list(
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p1_Y1, exposure_vec = phthalates_vec_ln), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p1_Y1, exposure_vec = phthalates_vec_sg_ln), 
+      
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p2_Y1, exposure_vec = phthalates_vec_ln), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p2_Y1, exposure_vec = phthalates_vec_sg_ln), 
+      
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p3_Y1, exposure_vec = phthalates_vec_ln), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p3_Y1, exposure_vec = phthalates_vec_sg_ln), 
+      
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p4_Y1, exposure_vec = phthalates_vec_ln), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p4_Y1, exposure_vec = phthalates_vec_sg_ln)), 
+    tab_spanner = c(
+      "**Phylum Firmicutes, principal analysis, fully adjusted**",
+      "**Phylum Firmicutes, sensitivity analysis, fully adjusted + sg**", 
+      "**Phylum Actinobacteria, principal analysis, fully adjusted**",
+      "**Phylum Actinobacteria, sensitivity analysis, fully adjusted + sg**", 
+      "**Phylum Bacteroidetes, principal analysis, fully adjusted**",
+      "**Phylum Bacteroidetes, sensitivity analysis, fully adjusted + sg**", 
+      "**Phylum Proteobacteria, principal analysis, fully adjusted**",
+      "**Phylum Proteobacteria, sensitivity analysis, fully adjusted + sg**"))
+
+
+sensi_sg_genera_phthalates <- tbl_merge(
+  tbls = list(
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g1_Y1, exposure_vec = phthalates_vec_ln), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g1_Y1, exposure_vec = phthalates_vec_sg_ln), 
+      
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g2_Y1, exposure_vec = phthalates_vec_ln), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g2_Y1, exposure_vec = phthalates_vec_sg_ln), 
+      
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g3_Y1, exposure_vec = phthalates_vec_ln), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g3_Y1, exposure_vec = phthalates_vec_sg_ln), 
+      
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g4_Y1, exposure_vec = phthalates_vec_ln), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g4_Y1, exposure_vec = phthalates_vec_sg_ln)), 
+    tab_spanner = c(
+      "**Genus Bifidobacterium, principal analysis, fully adjusted**",
+      "**Genus Bifidobacterium, sensitivity analysis, fully adjusted + sg**", 
+      "**Genus Bacteroides, principal analysis, fully adjusted**",
+      "**Genus Bacteroides, sensitivity analysis, fully adjusted + sg**", 
+      "**Genus Blautia, principal analysis, fully adjusted**",
+      "**Genus Blautia, sensitivity analysis, fully adjusted + sg**", 
+      "**Genera Eschericha / Shigella, principal analysis, fully adjusted**",
+      "**Genera Eschericha / Shigella, sensitivity analysis, fully adjusted + sg**"
+    ))
+
+
+
+## Analyses de sensibilité ln(i_cor) + xx_pool_sg_xx (continues) vs analyses de sensibilité ln(i_cor) + xx_pool_sg_xx (tertiles)
+sensi_sg_phthalates_obs <- test_sensi_sg(data = bdd_alpha, outcome = ch_feces_SpecRich_5000_ASV_Y1, exposure_vec = phthalates_vec)
+sensi_sg_phthalates_sha <- test_sensi_sg(data = bdd_alpha, outcome = ch_feces_Shannon_5000_ASV_Y1,  exposure_vec = phthalates_vec)
+sensi_sg_phthalates_fai <- test_sensi_sg(data = bdd_alpha, outcome = ch_feces_Faith_5000_ASV_Y1,    exposure_vec = phthalates_vec)
+
+sensi_sg_phthalates_p1 <- test_sensi_sg(data = bdd_taxa, outcome = ch_feces_rel_p1_Y1, exposure_vec = phthalates_vec)
+sensi_sg_phthalates_p2 <- test_sensi_sg(data = bdd_taxa, outcome = ch_feces_rel_p2_Y1, exposure_vec = phthalates_vec)
+sensi_sg_phthalates_p3 <- test_sensi_sg(data = bdd_taxa, outcome = ch_feces_rel_p3_Y1, exposure_vec = phthalates_vec)
+sensi_sg_phthalates_p4 <- test_sensi_sg(data = bdd_taxa, outcome = ch_feces_rel_p4_Y1, exposure_vec = phthalates_vec)
+
+sensi_sg_phthalates_g1 <- test_sensi_sg(data = bdd_taxa, outcome = ch_feces_rel_g1_Y1, exposure_vec = phthalates_vec)
+sensi_sg_phthalates_g2 <- test_sensi_sg(data = bdd_taxa, outcome = ch_feces_rel_g2_Y1, exposure_vec = phthalates_vec)
+sensi_sg_phthalates_g3 <- test_sensi_sg(data = bdd_taxa, outcome = ch_feces_rel_g3_Y1, exposure_vec = phthalates_vec)
+sensi_sg_phthalates_g4 <- test_sensi_sg(data = bdd_taxa, outcome = ch_feces_rel_g4_Y1, exposure_vec = phthalates_vec)
+```
+
+### AIC
+```{r}
+model_AIC <- function(data, 
+                      outcome, 
+                      exposure_continuous, 
+                      exposure_tertiles) {
+  
+  model_univ_continuous <- 
+    lm(outcome ~
+         exposure_continuous + ch_feces_RUN_Y1, 
+       data = data)
+  
+  model_multi_continuous <- 
+    lm(outcome ~
+         exposure_continuous +
+         ch_feces_RUN_Y1 +
+         ch_feces_age_w_Y1_i +
+         po_delmod +
+         ch_food_intro_Y1_3cat_i +
+         ch_antibio_Y1_2cat_i +
+         mo_par_2cat +
+         mo_pets_i +
+         ch_sex +
+         mo_tob_gr_anyt_yn_n2_i +
+         Mo_ETS_anyT_yn1_opt_i +
+         ch_ETS_12m_opt36m +
+         mo_interpreg_3cat +
+         mo_dipl_3cat_i +
+         po_w_kg_3cat +
+         po_he_3cat_i +
+         ch_w_Y1_3cat_i +
+         ch_he_Y1_3cat_i +
+         po_gd +
+         mo_age +
+         mo_bmi_bepr_3cat_i +
+         bf_duration_till48w_4cat_i,
+       data = data
+    )
+  
+  model_univ_tertiles <- 
+    lm(outcome ~
+         exposure_tertiles + ch_feces_RUN_Y1, 
+       data = data)
+  
+  model_multi_tertiles <- 
+    lm(outcome ~
+         exposure_tertiles +
+         ch_feces_RUN_Y1 +
+         ch_feces_age_w_Y1_i +
+         po_delmod +
+         ch_food_intro_Y1_3cat_i +
+         ch_antibio_Y1_2cat_i +
+         mo_par_2cat +
+         mo_pets_i +
+         ch_sex +
+         mo_tob_gr_anyt_yn_n2_i +
+         Mo_ETS_anyT_yn1_opt_i +
+         ch_ETS_12m_opt36m +
+         mo_interpreg_3cat +
+         mo_dipl_3cat_i +
+         po_w_kg_3cat +
+         po_he_3cat_i +
+         ch_w_Y1_3cat_i +
+         ch_he_Y1_3cat_i +
+         po_gd +
+         mo_age +
+         mo_bmi_bepr_3cat_i +
+         bf_duration_till48w_4cat_i,
+       data = data
+    )
+  
+  models <- list(model_univ_continuous, model_multi_continuous, 
+                 model_univ_tertiles, model_multi_tertiles)
+  models_names <- c("model_univ_continuous", "model_multi_continuous", 
+                    "model_univ_tertiles", "model_multi_tertiles")
+  result <- list(
+    summary(model_univ_continuous), 
+    summary(model_multi_continuous), 
+    summary(model_univ_tertiles), 
+    summary(model_multi_tertiles), 
+    aictab(cand.set = models, modnames = models_names))
+  return(result)
+}
+
+
+  
+model_univ_continuous <- 
+    lm(ch_feces_SpecRich_5000_ASV_Y1 ~
+         mo_pool_sg_T1_2 + ch_feces_RUN_Y1, 
+       data = bdd_alpha)
+  
+model_multi_continuous <- 
+    lm(ch_feces_SpecRich_5000_ASV_Y1 ~
+         mo_pool_sg_T1_2 +
+         ch_feces_RUN_Y1 +
+         ch_feces_age_w_Y1_i +
+         po_delmod +
+         ch_food_intro_Y1_3cat_i +
+         ch_antibio_Y1_2cat_i +
+         mo_par_2cat +
+         mo_pets_i +
+         ch_sex +
+         mo_tob_gr_anyt_yn_n2_i +
+         Mo_ETS_anyT_yn1_opt_i +
+         ch_ETS_12m_opt36m +
+         mo_interpreg_3cat +
+         mo_dipl_3cat_i +
+         po_w_kg_3cat +
+         po_he_3cat_i +
+         ch_w_Y1_3cat_i +
+         ch_he_Y1_3cat_i +
+         po_gd +
+         mo_age +
+         mo_bmi_bepr_3cat_i +
+         bf_duration_till48w_4cat_i,
+       data = bdd_alpha
+    )
+  
+model_univ_tertiles <- 
+    lm(ch_feces_SpecRich_5000_ASV_Y1 ~
+         mo_pool_sg_T1_2_ter + ch_feces_RUN_Y1, 
+       data = bdd_alpha)
+  
+model_multi_tertiles <- 
+    lm(ch_feces_SpecRich_5000_ASV_Y1 ~
+         mo_pool_sg_T1_2_ter +
+         ch_feces_RUN_Y1 +
+         ch_feces_age_w_Y1_i +
+         po_delmod +
+         ch_food_intro_Y1_3cat_i +
+         ch_antibio_Y1_2cat_i +
+         mo_par_2cat +
+         mo_pets_i +
+         ch_sex +
+         mo_tob_gr_anyt_yn_n2_i +
+         Mo_ETS_anyT_yn1_opt_i +
+         ch_ETS_12m_opt36m +
+         mo_interpreg_3cat +
+         mo_dipl_3cat_i +
+         po_w_kg_3cat +
+         po_he_3cat_i +
+         ch_w_Y1_3cat_i +
+         ch_he_Y1_3cat_i +
+         po_gd +
+         mo_age +
+         mo_bmi_bepr_3cat_i +
+         bf_duration_till48w_4cat_i,
+       data = bdd_alpha
+    )
+  
+  models <- list(model_univ_continuous, model_multi_continuous, 
+                 model_univ_tertiles, model_multi_tertiles)
+  models_names <- c("model_univ_continuous", "model_multi_continuous", 
+                    "model_univ_tertiles", "model_multi_tertiles")
+
+  aictab(cand.set = models, modnames = models_names)
+
+
+model_AIC(data = bdd_alpha, 
+          outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, 
+          exposure_continuous = bdd_alpha$mo_pool_sg_T1_2, 
+          exposure_tertiles = bdd_alpha$mo_pool_sg_T1_2_ter)
+
+model_AIC(data = bdd_alpha, 
+          outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, 
+          exposure_continuous = bdd_alpha$mo_pool_sg_T3_2, 
+          exposure_tertiles = bdd_alpha$mo_pool_sg_T3_2_ter)
+
+model_AIC(data = bdd_alpha, 
+          outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, 
+          exposure_continuous = bdd_alpha$ch_pool_sg_M2_2, 
+          exposure_tertiles = bdd_alpha$ch_pool_sg_M2_2_ter)
+
+model_AIC(data = bdd_alpha, 
+          outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1, 
+          exposure_continuous = bdd_alpha$ch_pool_sg_Y1_2, 
+          exposure_tertiles = bdd_alpha$ch_pool_sg_Y1_2_ter)
+
+model_AIC(data = bdd_alpha, 
+          outcome = bdd_alpha$ch_feces_Shannon_5000_ASV_Y1, 
+          exposure_continuous = bdd_alpha$mo_pool_sg_T1_2, 
+          exposure_tertiles = bdd_alpha$mo_pool_sg_T1_2_ter)
+
+model_AIC(data = bdd_alpha, 
+          outcome = bdd_alpha$ch_feces_Shannon_5000_ASV_Y1, 
+          exposure_continuous = bdd_alpha$mo_pool_sg_T3_2, 
+          exposure_tertiles = bdd_alpha$mo_pool_sg_T3_2_ter)
+
+model_AIC(data = bdd_alpha, 
+          outcome = bdd_alpha$ch_feces_Shannon_5000_ASV_Y1, 
+          exposure_continuous = bdd_alpha$ch_pool_sg_M2_2, 
+          exposure_tertiles = bdd_alpha$ch_pool_sg_M2_2_ter)
+
+model_AIC(data = bdd_alpha, 
+          outcome = bdd_alpha$ch_feces_Shannon_5000_ASV_Y1, 
+          exposure_continuous = bdd_alpha$ch_pool_sg_Y1_2, 
+          exposure_tertiles = bdd_alpha$ch_pool_sg_Y1_2_ter)
+
+```
+
+
+### Distribution des résidus
+```{r}
+## distribution des résidus 
+phthalates_vec_Y1 <- bdd_alpha %>% select(all_of(phthalates_vec_2 )) %>% select(ends_with("Y1_ln") ) %>% colnames
+
+model_table_sg_ter <- function(data, outcome, exposure_vec){
+  
+  effectif <- data %>%                   # Création d'une colonne effectif
+    select(all_of({{exposure_vec}})) %>%
+    tbl_summary(missing = "no") %>%
+    bold_labels()
+  
+  univ <- data %>%                      # Création des colonnes modèle simple ajusté sur le run
+    select(
+      {{outcome}}, 
+      all_of({{exposure_vec}}),
+      ch_feces_RUN_Y1, 
+      ch_pool_sg_Y1_2_ter
+    ) %>%
+    
+    tbl_uvregression(
+      method = lm ,
+      y = {{outcome}},
+      formula = "{y} ~ {x} + ch_feces_RUN_Y1 + ch_pool_sg_Y1_2_ter", 
+      hide_n = TRUE, 
+      pvalue_fun = ~style_pvalue(.x, digits = 3), 
+      estimate_fun = ~style_sigfig(.x,digits = 2)) %>%
+    add_global_p() %>%
+    bold_labels() 
+  
+  multi <- data %>%                  # Création des colonnes modèle complet
+    select(
+      {{outcome}},
+      all_of({{exposure_vec}}),
+      all_of(covar_vec_i), 
+      ch_pool_sg_Y1_2_ter) %>% 
+    
+    tbl_uvregression(
+      method = lm ,
+      y = {{outcome}},
+      formula = "{y} ~ {x} +
+         ch_feces_RUN_Y1  +
+         ch_pool_sg_Y1_2_ter + 
+         ch_feces_age_w_Y1_i +
+         po_delmod +
+         ch_food_intro_Y1_3cat_i +
+         ch_antibio_Y1_2cat_i +
+         mo_par_2cat +
+         mo_pets_i +
+         ch_sex +
+         mo_tob_gr_anyt_yn_n2_i +
+         Mo_ETS_anyT_yn1_opt_i +
+         ch_ETS_12m_opt36m +
+         mo_interpreg_3cat +
+         mo_dipl_3cat_i +
+         po_w_kg_3cat +
+         po_he_3cat_i +
+         ch_w_Y1_3cat_i +
+         ch_he_Y1_3cat_i +
+         po_gd +
+         mo_age +
+         mo_bmi_bepr_3cat_i +
+         bf_duration_till48w_4cat_i",
+      hide_n = TRUE,
+      pvalue_fun = ~ style_pvalue(.x, digits = 2),
+      estimate_fun = ~ style_sigfig(.x, digits = 1)
+    ) %>%
+    add_global_p(keep = TRUE, singular.ok = TRUE) %>%
+    bold_labels()
+  
+  result <- tbl_merge(                           # merge les colonnes 
+    tbls = list(effectif, univ, multi),
+    tab_spanner = c("**Median (IQR); n (%)**", 
+                    "**Adjusted on MiSeq batch effet and specific gravity 1 an ter**",
+                    "**Fully adjusted**"))
+  return(result)
+}
+
+
+model_table_sg_ter(data = bdd_alpha, outcome = ch_feces_SpecRich_5000_ASV_Y1, exposure_vec = phthalates_vec_Y1)
+
+
+
+
+test1 <- lm(ch_feces_SpecRich_5000_ASV_Y1 ~
+              ch_MnBP_i_cor_Y1_ln +
+              ch_feces_RUN_Y1 +
+              ch_pool_sg_Y1_2_ter,
+            data = bdd_alpha)
+qqnorm1 <- qqnorm(rstudent(test1)) ; abline(0, 1)   
+hist(rstudent(test1))
+ks.test1 <- ks.test(rstudent(test1), pnorm, mean = mean(rstudent(test1)), sd = sd(rstudent(test1)))  
+
+
+test2 <-           # modèle complet
+  lm(
+    ch_feces_SpecRich_5000_ASV_Y1 ~
+      ch_MnBP_i_cor_Y1_ln +
+      ch_feces_RUN_Y1 +
+      ch_pool_sg_Y1_2_ter + 
+      ch_feces_age_w_Y1_i +
+      po_delmod +
+      ch_food_intro_Y1_3cat_i +
+      ch_antibio_Y1_2cat_i +
+      mo_par_2cat +
+      mo_pets_i +
+      ch_sex +
+      mo_tob_gr_anyt_yn_n2_i +
+      Mo_ETS_anyT_yn1_opt_i +
+      ch_ETS_12m_opt36m +
+      mo_interpreg_3cat +
+      mo_dipl_3cat_i +
+      po_w_kg_3cat +
+      po_he_3cat_i +
+      ch_w_Y1_3cat_i +
+      ch_he_Y1_3cat_i +
+      po_gd +
+      mo_age +
+      mo_bmi_bepr_3cat_i +
+      bf_duration_till48w_4cat_i,
+    data = bdd_alpha
+  )
+
+qqnorm2 <- qqnorm(rstudent(test2)) ; abline(0, 1)   
+hist(rstudent(test2))
+ks.test2 <- ks.test(rstudent(test2), pnorm, mean = mean(rstudent(test2)), sd = sd(rstudent(test2)))  
+
+
+  
+
+test_residu(
+  data = bdd_alpha,
+  exposure = bdd_alpha$mo_BUPA_total_cat_t2,
+  outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1
+)
+
+test <- model_multi(data = bdd_alpha, 
+                    exposure = bdd_alpha$mo_BUPA_total_cat_t2, 
+                    outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1)
+
+
+```
+
+
+## Contamination BPA 2 et 12 mois, MEPA 12 mois
+```{r}
+# Préparation des données ----
+free_vec <- c("ch_BPA_free_i_cor_M2_ln", "ch_BPA_free_i_cor_Y1_ln", "ch_MEPA_free_i_cor_Y1_ln")
+conj_vec <- c("ch_BPA_conj_i_cor_M2_ln", "ch_BPA_conj_i_cor_Y1_ln", "ch_MEPA_conj_i_cor_Y1_ln")
+total_vec <- c("ch_BPA_total_i_cor_M2_ln", "ch_BPA_total_i_cor_Y1_ln", "ch_MEPA_total_i_cor_Y1_ln")
+
+add <- metadata %>% select(ident, all_of(free_vec))
+bdd_taxa <- left_join(bdd_taxa, add, by = "ident")
+bdd_alpha <- left_join(bdd_taxa, add, by = "ident")
+
+### Tableaux modèles alpha diversity ----
+#### Idem tableaux analyses principales mais avec les concentrations totales pour toutes les expos
+table_phyla_phenols <-                                    # ici on a que des concentrations totales
+  tbl_merge(
+  tbls = list(
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p1_Y1, exposure_vec = phenols_vec), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p2_Y1, exposure_vec = phenols_vec), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p3_Y1, exposure_vec = phenols_vec), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p4_Y1, exposure_vec = phenols_vec)), 
+  tab_spanner = c("**Phylum Firmicutes**", "**Phylum Actinobacteria**", "**Phylum Bacteroidetes**", "**Phylum Proteobacteria**"))
+
+table_genera_phenols <-                                 # ici on a que des concentrations totales
+  tbl_merge(
+  tbls = list(
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g1_Y1, exposure_vec = phenols_vec), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g2_Y1, exposure_vec = phenols_vec), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g3_Y1, exposure_vec = phenols_vec), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g4_Y1, exposure_vec = phenols_vec)), 
+  tab_spanner = c("**Genus Bifidobacterium**", "**Genus Bacteroides**", "**Genus Blautia**", "**Genera Eschericha / Shigella**"))
+
+#### Alpha div ----
+sensi_conta_alpha <- tbl_merge(
+  tbls = list(
+    model_multi(data = bdd_alpha, outcome = ch_feces_SpecRich_5000_ASV_Y1, exposure_vec = free_vec),
+     model_multi(data = bdd_alpha, outcome = ch_feces_SpecRich_5000_ASV_Y1, exposure_vec = conj_vec),
+     model_multi(data = bdd_alpha, outcome = ch_feces_SpecRich_5000_ASV_Y1, exposure_vec = total_vec),
+    
+    model_multi(data = bdd_alpha, outcome = ch_feces_Shannon_5000_ASV_Y1, exposure_vec = free_vec),
+    model_multi(data = bdd_alpha, outcome = ch_feces_Shannon_5000_ASV_Y1, exposure_vec = conj_vec),
+    model_multi(data = bdd_alpha, outcome = ch_feces_Shannon_5000_ASV_Y1, exposure_vec = total_vec),
+    
+    model_multi(data = bdd_alpha, outcome = ch_feces_Faith_5000_ASV_Y1, exposure_vec = free_vec),
+    model_multi(data = bdd_alpha, outcome = ch_feces_Faith_5000_ASV_Y1, exposure_vec = conj_vec),
+    model_multi(data = bdd_alpha, outcome = ch_feces_Faith_5000_ASV_Y1, exposure_vec = total_vec)),
+  
+  tab_spanner = c("**Specific richness, free conc.**", "**Specific richness, conj. conc.**", "**Specific richness, total conc.**", 
+                  "**Shannon diversity, free conc.**", "**Shannon diversity, conj. conc.**", "**Shannon diversity, total conc.**", 
+                  "**Faith diversity, free conc.**", "**Faith diversity, conj. conc.**", "**Faith diversity, total conc.**"))
+
+
+sensi_conta_phyla <- tbl_merge(
+  tbls = list(
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p1_Y1, exposure_vec = free_vec), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p1_Y1, exposure_vec = conj_vec), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p1_Y1, exposure_vec = total_vec), 
+      
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p2_Y1, exposure_vec = free_vec), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p2_Y1, exposure_vec = conj_vec), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p2_Y1, exposure_vec = total_vec), 
+      
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p3_Y1, exposure_vec = free_vec), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p3_Y1, exposure_vec = conj_vec), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p3_Y1, exposure_vec = total_vec), 
+      
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p4_Y1, exposure_vec = free_vec), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p4_Y1, exposure_vec = conj_vec), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_p4_Y1, exposure_vec = total_vec)), 
+  
+    tab_spanner = c(
+      "**Phylum Firmicutes, free conj.**", "**Phylum Firmicutes, conj. conc.**", "**Phylum Firmicutes, total conc.**", 
+      "**Phylum Actinobacteria, free conj.**", "**Phylum Actinobacteria, conj. conc.**", "**Phylum Actinobacteria, total conc.**", 
+      "**Phylum Bacteroidetes, free conj.**", "**Phylum Bacteroidetes, conj. conc.**", "**Phylum Bacteroidetes, total conc.**", 
+      "**Phylum Proteobacteria, free conj.**", "**Phylum Proteobacteria, conj. conc.**", "**Phylum Proteobacteria, total conc.**"))
+
+
+sensi_conta_genera <- tbl_merge(
+  tbls = list(
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g1_Y1, exposure_vec = free_vec), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g1_Y1, exposure_vec = conj_vec), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g1_Y1, exposure_vec = total_vec), 
+      
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g2_Y1, exposure_vec = free_vec), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g2_Y1, exposure_vec = conj_vec), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g2_Y1, exposure_vec = total_vec), 
+      
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g3_Y1, exposure_vec = free_vec), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g3_Y1, exposure_vec = conj_vec), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g3_Y1, exposure_vec = total_vec), 
+    
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g4_Y1, exposure_vec = free_vec), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g4_Y1, exposure_vec = conj_vec), 
+      model_multi(data = bdd_taxa, outcome = ch_feces_rel_g4_Y1, exposure_vec = total_vec)), 
+  
+    tab_spanner = c(
+      "**Genus Bifidobacterium, free conj.**", "**Genus Bifidobacterium, conj conc.**", "**Genus Bifidobacterium, total conc.**",
+      "**Genus Bacteroides, free conj.**", "**Genus Bacteroides, conj conc.**", "**Genus Bacteroides, total conc.**",
+      "**Genus Blautia, free conj.**", "**Genus Blautia, conj conc.**", "**Genus Blautia, total conc.**",
+      "**Genera Eschericha / Shigella, free conj.**", "**Genera Eschericha / Shigella, conj conc.**", "**Genera Eschericha / Shigella, total conc.**"))
+
+```
+
+
+
+## Approfoncdissement expo 2 mois BPS et BUPA 
+```{r}
+# distribution des résidus
+model_summary(
+  outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1,
+  exposure = bdd_alpha$ch_BUPA_total_cat_M2_2,
+  data = bdd_alpha)
+model_summary(
+  outcome = bdd_alpha$ch_feces_Shannon_5000_ASV_Y1,
+  exposure = bdd_alpha$ch_BUPA_total_cat_M2_2,
+  data = bdd_alpha)
+model_summary(
+  outcome = bdd_alpha$ch_feces_Faith_5000_ASV_Y1,
+  exposure = bdd_alpha$ch_BUPA_total_cat_M2_2,
+  data = bdd_alpha)
+
+model_summary(
+  outcome = bdd_alpha$ch_feces_SpecRich_5000_ASV_Y1,
+  exposure = bdd_alpha$ch_BPS_total_cat_M2_2,
+  data = bdd_alpha)
+model_summary(
+  outcome = bdd_alpha$ch_feces_Shannon_5000_ASV_Y1,
+  exposure = bdd_alpha$ch_BPS_total_cat_M2_2,
+  data = bdd_alpha)
+model_summary(
+  outcome = bdd_alpha$ch_feces_Faith_5000_ASV_Y1,
+  exposure = bdd_alpha$ch_BPS_total_cat_M2_2,
+  data = bdd_alpha)
+
+# outliers 
+
+```
+
+
+## tertiles 
+```{r}
+
+# Tableau de résultats pour article
+effectif_alpha_phthalates_ter <- bdd_alpha %>% 
+  filter(!is.na(ch_feces_Shannon_5000_ASV_Y1)) %>% 
+  select(all_of(phthalates_vec_ter)) %>% 
+  tbl_summary(missing = "no", 
+              statistic = list(all_continuous() ~ "{N_nonmiss}", 
+                               all_categorical() ~ c("{n} ({p}%)"))) 
+
+effectif_taxa_phthalates_ter <- bdd_taxa %>% 
+  filter(!is.na(ch_feces_rel_g1_Y1)) %>% 
+  select(all_of(phthalates_vec_ter)) %>% 
+  tbl_summary(missing = "no", 
+              statistic = list(all_continuous() ~ "{N_nonmiss}", 
+                               all_categorical() ~ c("{n} ({p}%)"))) 
+
+table_phyla_phthalates <-
+  tbl_merge(
+  tbls = list(
+    effectif_taxa_phthalates_ter, 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p1_Y1, exposure_vec = phthalates_vec_ter), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p2_Y1, exposure_vec = phthalates_vec_ter), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p3_Y1, exposure_vec = phthalates_vec_ter), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_p4_Y1, exposure_vec = phthalates_vec_ter)), 
+  tab_spanner = c("**Effectif**", "**Phylum Firmicutes**", "**Phylum Actinobacteria**", "**Phylum Bacteroidetes**", "**Phylum Proteobacteria**"))
+
+table_genera_phthalates <-
+  tbl_merge(
+  tbls = list(
+    effectif_taxa_phthalates_ter, 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g1_Y1, exposure_vec = phthalates_vec_ter), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g2_Y1, exposure_vec = phthalates_vec_ter), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g3_Y1, exposure_vec = phthalates_vec_ter), 
+    model_multi(data = bdd_taxa, outcome = ch_feces_rel_g4_Y1, exposure_vec = phthalates_vec_ter)), 
+  tab_spanner = c("**Effectif**", "**Genus Bifidobacterium**", "**Genus Bacteroides**", "**Genus Blautia**", "**Genera Eschericha / Shigella**"))
+
+
+```
+

@@ -1,0 +1,809 @@
+---
+title: "Statistiques descriptives projet GUMME"
+author: "Aline Davias"
+date: '2022-07-21'
+output: html_document
+---
+<style type="text/css">
+.main-container {
+  max-width: 1800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = TRUE,
+	warning = TRUE
+)
+```
+
+# Chargement des données 
+```{r message=FALSE, warning=FALSE, include=FALSE}
+# Préparation 
+source("~/GUMME/pollutants_gut_microbiota_Y1/3_programs/3_data_selection_AD_gumme.R", encoding = 'UTF-8')  # bdd
+source("~/GUMME/pollutants_gut_microbiota_Y1/3_programs/4_functions_AD_gumme.R", encoding = 'UTF-8')       # fonctions
+```
+
+# Covariables 
+## Tableaux descriptifs
+Distribution des covariables avant imputation 
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+descrip_num(data = metadata, vars = covar_vec_num)             # Avant imputation (continues)
+metadata %>% select(all_of(covar_vec_cat)) %>% tbl_summary()   # Avant imputation (catégorielles)
+```
+
+Distribution des covariables après imputation
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+descrip_num(data = metadata, vars = covar_vec_num_i)           # Après imputation (continues)
+metadata %>% select(all_of(covar_vec_cat_i)) %>% tbl_summary() # Après imputation (catégorielles)
+```
+Certaines variables n'ont pas été imputées, elles ont des données manquantes mais après selection (n=360), on a des données completes
+
+Compararaison de la distribution des covariables avant et après imputation
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+gumme <- metadata %>% filter(statut == "inclu")
+comp_effectifs(data = gumme,                                           # Comparaison avant / après imputation 
+               vars_col1 = covar_vec, name_col1 = "Before imputation", 
+               vars_col2 = covar_vec_i, name_col2 = "After imputation")
+
+effectif_alpha_i <- bdd_alpha %>% 
+  filter(!is.na(ch_feces_ACE_5000_ASV_Y1)) %>% 
+  select(all_of(covar_vec_i)) %>% 
+  tbl_summary(missing = "no", 
+              type = list(ch_antibio_Y1_2cat_i ~ "categorical", 
+                          mo_tob_gr_anyt_yn_n2_i ~"categorical", 
+                          Mo_ETS_anyT_yn1_opt_i ~"categorical", 
+                          ch_ETS_12m_opt36m ~ "categorical"),
+              statistic = list(all_continuous() ~ "{N_nonmiss}", 
+                               all_categorical() ~ c("{n} ({p}%)"))) 
+
+
+effectif_taxa_i <- bdd_taxa %>% 
+  filter(!is.na(ch_feces_rel_g1_Y1)) %>% 
+  select(all_of(covar_vec_i)) %>% 
+  tbl_summary(missing = "no", 
+              type = list(ch_antibio_Y1_2cat_i ~ "categorical", 
+                          mo_tob_gr_anyt_yn_n2_i ~"categorical", 
+                          Mo_ETS_anyT_yn1_opt_i ~"categorical", 
+                          ch_ETS_12m_opt36m ~ "categorical"),
+              statistic = list(all_continuous() ~ "{N_nonmiss}", 
+                               all_categorical() ~ c("{n} ({p}%)"))) 
+
+effectif_alpha <- bdd_alpha %>% 
+  filter(!is.na(ch_feces_ACE_5000_ASV_Y1)) %>% 
+  select(all_of(covar_vec)) %>% 
+  tbl_summary(missing = "no", 
+              type = list(ch_antibio_Y1_2cat ~ "categorical", 
+                          mo_tob_gr_anyt_yn_n2 ~"categorical", 
+                          Mo_ETS_anyT_yn1_opt ~"categorical", 
+                          ch_ETS_12m_opt36m ~ "categorical"),
+              statistic = list(all_continuous() ~ "{N_nonmiss}", 
+                               all_categorical() ~ c("{n} ({p}%)"))) 
+
+
+effectif_taxa <- bdd_taxa %>% 
+  filter(!is.na(ch_feces_rel_g1_Y1)) %>% 
+  select(all_of(covar_vec)) %>% 
+  tbl_summary(missing = "no", 
+              type = list(ch_antibio_Y1_2cat ~ "categorical", 
+                          mo_tob_gr_anyt_yn_n2 ~"categorical", 
+                          Mo_ETS_anyT_yn1_opt ~"categorical", 
+                          ch_ETS_12m_opt36m ~ "categorical"),
+              statistic = list(all_continuous() ~ "{N_nonmiss}", 
+                               all_categorical() ~ c("{n} ({p}%)"))) 
+```
+
+
+Comparaison de la distribution des covariables entre les inclu / exclu des analyses GUMME 
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+metadata %>%
+  select(all_of(covar_vec_i),
+         statut) %>%
+  tbl_summary(
+    by = statut, 
+    include = -c(ch_feces_RUN_Y1, ch_feces_age_w_Y1_i)) 
+```
+
+## Graphiques descriptifs
+Distribution des covariables avant imputation 
+```{r echo=FALSE, fig.height=15, fig.width=15, message=FALSE, warning=FALSE}
+boxplot(data = metadata, vars = covar_vec_num)        # boxplots
+histogram(data = metadata, vars = covar_vec_num)      # histogrammes 
+barplot(data = metadata, vars = covar_vec_cat)        # barplots
+```
+
+Distribution des covariables après imputation 
+```{r echo=FALSE, fig.height=15, fig.width=15, message=FALSE, warning=FALSE}
+boxplot(data = metadata, vars = covar_vec_num_i)
+histogram(data = metadata, vars = covar_vec_num_i)
+barplot(data = metadata, vars = covar_vec_cat_i)
+```
+
+## Vérification des données 
+### Visualisation des outliers
+Age de l'enfant au prélévement de la selle (semaines)
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+outliers(data = metadata, var = ch_feces_age_w_Y1)
+```
+
+Nombre de prise d'antibiotique entre la naissance et l'âge de 1 an
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+outliers(data = metadata, var = ch_antibio_Y1)
+```
+
+Parité de la mère
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+outliers(data = metadata, var = mo_par)
+```
+
+Poids de l'enfant à la naissance (Kg) 
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+outliers(data = metadata, var = po_w_kg)
+```
+
+Taille de l'enfant à la naissance (cm)
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+outliers(data = metadata, var = po_he)
+```
+
+Poids de l'enfant à un an (Kg)
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+outliers(data = metadata, var = ch_w_Y1)
+```
+
+Taille de l'enfant à un an (cm)
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+outliers(data = metadata, var = ch_he_Y1)
+```
+
+Age gestationel (semaines)
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+outliers(data = metadata, var = po_gd)
+```
+
+Age de la mère pendant la grossesse (années)
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+outliers(data = metadata, var = mo_age)
+```
+
+IMC de la mère avant la grossesse (Kg/m²)
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+outliers(data = metadata, var = mo_bmi_bepr)
+```
+
+Durée de l'allaitement (semaines)
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+outliers(data = metadata, var = bf_duration_till48w)
+```
+Pas d'outliers pour les variables parité de la mère et durée de l'allaitement 
+
+
+### Visualisation et test de la normalité
+```{r echo=FALSE, fig.height=15, fig.width=15, message=FALSE, warning=FALSE}
+densityplot(data = metadata, vars = covar_vec_num)
+densityplot(data = metadata, vars = covar_vec_num_i)
+
+apply(metadata[, covar_vec_num_i],2,shapiro.test)
+```
+
+### Visualisation et test de la corrélation 
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+heatmap_cor(cormat = metadata[, covar_vec_num])
+```
+
+# Outcomes 
+## Tableaux descriptifs
+```{r}
+descrip_num(data = bdd_alpha, vars = alpha_vec)
+```
+
+## Graphiques descriptifs
+### Alpha diversité
+```{r}
+boxplot(data = bdd_alpha, vars = alpha_vec)           
+histogram(data= bdd_alpha, vars = alpha_vec)
+```
+
+### Taxonomie
+```{r}
+#### Heatmap de corrélation entre les taxons d'interet
+heatmap_taxa <- bdd_taxa %>% 
+  select(all_of(taxa_vec)) %>%
+  rename(p_firmicutes = ch_feces_rel_p1_Y1, 
+         p_actinobacteria = ch_feces_rel_p2_Y1, 
+         p_bacteroidetes = ch_feces_rel_p3_Y1, 
+         p_proteobacteria = ch_feces_rel_p4_Y1, 
+         g_bifidobacterium = ch_feces_rel_g1_Y1, 
+         g_bacteroides = ch_feces_rel_g2_Y1,
+         g_blautia = ch_feces_rel_g3_Y1, 
+         g_escherichia_shigella = ch_feces_rel_g4_Y1)
+heatmap_taxa <- heatmap_cor(heatmap_taxa)
+
+#### Barplot des phyla 
+phylum.rel <- asv_taxa %>% 
+  select(ident, starts_with("ch_feces_rel_p")) %>% 
+  filter(!is.na(ch_feces_rel_p1_Y1))
+
+bar_order1 <- phylum.rel %>% select(ident, ch_feces_rel_p1_Y1)
+bar_order2 <- phylum.rel %>% select(ident, ch_feces_rel_p2_Y1)
+phylum.rel.long <- gather(phylum.rel, Variable, value, -ident)                 # = pivot_longer()
+phylum.rel.long <- left_join(phylum.rel.long, bar_order1, by= "ident")
+phylum.rel.long <- left_join(phylum.rel.long, bar_order2, by= "ident")
+phylum.rel.long <- phylum.rel.long %>% 
+  rename(Firmicute_order = ch_feces_rel_p1_Y1, 
+         Actinobacteria_order = ch_feces_rel_p2_Y1)
+
+phylum.rel.long$Variable <- fct_relevel(
+  phylum.rel.long$Variable,
+  "ch_feces_rel_p10_Y1", "ch_feces_rel_p9_Y1", "ch_feces_rel_p8_Y1",
+  "ch_feces_rel_p7_Y1", "ch_feces_rel_p6_Y1",
+  "ch_feces_rel_p5_Y1", "ch_feces_rel_p4_Y1", "ch_feces_rel_p3_Y1",
+  "ch_feces_rel_p2_Y1", "ch_feces_rel_p1_Y1")
+
+barplot.phylum.rel <- phylum.rel.long %>%
+  ggplot() +
+  aes(x = reorder(ident, -Firmicute_order), 
+      y = value, 
+      fill = Variable) + 
+  geom_col(position = position_fill(), 
+           width=1) +
+  labs(
+    x = "Feces of SEPAGES children",
+    y = "Relative abundance (%)",
+    title = "") +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_brewer(
+    name = "", 
+    labels =  c("ch_feces_rel_p1_Y1" = "Firmicutes",
+                "ch_feces_rel_p2_Y1" = "Actinobacteria",
+                "ch_feces_rel_p3_Y1" = "Bacteroidetes",
+                "ch_feces_rel_p4_Y1" = "Proteobacteria",
+                "ch_feces_rel_p5_Y1" = "Verrucomicrobia",
+                "ch_feces_rel_p10_Y1" = "Tenericutes",
+                "ch_feces_rel_p6_Y1" = "Candidatus Saccharibacteria",
+                "ch_feces_rel_p7_Y1" = "Cyanobacteria Chloroplast",
+                "ch_feces_rel_p9_Y1" = "Fusobacteria",
+                "ch_feces_rel_p8_Y1" = "Euryarchaeota"), 
+    palette = "Paired", 
+    direction = - 1)+
+  scale_x_discrete(breaks = NULL)  +
+  theme_classic() +
+  theme(
+    text = element_text(family = "serif"),       # use  windowsFonts() to see how to set fonts
+    panel.background = element_rect(fill = "transparent", colour = NA),
+    plot.background = element_rect(fill = "transparent", colour = NA),
+    legend.background = element_rect(fill = "transparent", colour = NA), 
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(), 
+    axis.line = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.title = element_text(size=9, face = "bold"),
+    axis.text.y = element_text(size = 9), 
+    legend.text = element_text(size = 8), 
+    legend.key.size = unit(0.5, "cm"))
+
+
+
+#### Boxplot des phyla
+phylum.rel.long$Variable <- fct_relevel(                                            
+  phylum.rel.long$Variable,
+  "ch_feces_rel_p1_Y1", "ch_feces_rel_p2_Y1", "ch_feces_rel_p3_Y1",
+  "ch_feces_rel_p4_Y1", "ch_feces_rel_p5_Y1", "ch_feces_rel_p6_Y1", 
+  "ch_feces_rel_p7_Y1","ch_feces_rel_p8_Y1",
+  "ch_feces_rel_p9_Y1", "ch_feces_rel_p10_Y1")
+
+boxplot.phylum.rel <- phylum.rel.long %>%
+  ggplot() +
+  aes(x = "", 
+      y = value, 
+      fill = Variable) +
+  geom_boxplot() +
+  scale_y_continuous() +
+  scale_fill_brewer(
+    palette = "Paired",  
+    direction = 1, 
+    labels =  c("ch_feces_rel_p1_Y1" = "Firmicutes",
+                "ch_feces_rel_p2_Y1" = "Actinobacteria",
+                "ch_feces_rel_p3_Y1" = "Bacteroidetes",
+                "ch_feces_rel_p4_Y1" = "Proteobacteria",
+                "ch_feces_rel_p5_Y1" = "Verrucomicrobia",
+                "ch_feces_rel_p10_Y1" = "Tenericutes",
+                "ch_feces_rel_p6_Y1" = "Candidatus Saccharibacteria",
+                "ch_feces_rel_p7_Y1" = "Cyanobacteria Chloroplast",
+                "ch_feces_rel_p9_Y1" = "Fusobacteria",
+                "ch_feces_rel_p8_Y1" = "Euryarchaeota")) +
+  labs(
+    x = "Phyla",
+    y = "Proportion", 
+    title = "",
+    fill = "") +
+  theme_classic() +
+  theme(
+    panel.background = element_rect(fill = "transparent", colour = NA),
+    plot.background = element_rect(fill = "transparent", colour = NA),
+    legend.background = element_rect(fill = "transparent", colour = NA), 
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(), 
+    axis.ticks.x = element_blank(),
+    axis.line.x = element_blank(),
+    axis.title = element_text(size=15, face = "bold"),
+    axis.text.y = element_text(size = 14),
+    legend.text = element_text(size = 14), 
+    legend.position = "bottom")
+
+
+#### Barplot des genres
+genus.rel <- asv_taxa %>% 
+  select(
+    ident,
+    ch_feces_rel_g1_Y1,
+    ch_feces_rel_g2_Y1,
+    ch_feces_rel_g3_Y1,
+    ch_feces_rel_g4_Y1,
+    ch_feces_rel_g5_Y1,
+    ch_feces_rel_g6_Y1,
+    ch_feces_rel_g7_Y1,
+    ch_feces_rel_g8_Y1,
+    ch_feces_rel_g9_Y1,
+    ch_feces_rel_g10_Y1)  %>%
+  filter(!is.na(ch_feces_rel_g1_Y1))
+
+bar_order3 <- genus.rel %>% select(ident, ch_feces_rel_g1_Y1)        
+bar_order4 <- genus.rel %>% select(ident, ch_feces_rel_g2_Y1)
+genus.rel.long <- gather(genus.rel, Variable, value, -ident) 
+genus.rel.long <- left_join(genus.rel.long, bar_order3, by= "ident")
+genus.rel.long <- left_join(genus.rel.long, bar_order4, by= "ident")
+genus.rel.long <- genus.rel.long %>% 
+  rename(
+    Bifidobacterium_order = ch_feces_rel_g1_Y1, 
+    Bacteroides_order = ch_feces_rel_g2_Y1) %>%
+  mutate(
+    ident = as.factor(ident), 
+    Variable = fct_relevel(
+      Variable,
+      "ch_feces_rel_g10_Y1",  "ch_feces_rel_g9_Y1","ch_feces_rel_g8_Y1",
+      "ch_feces_rel_g7_Y1", "ch_feces_rel_g6_Y1", "ch_feces_rel_g5_Y1",
+      "ch_feces_rel_g4_Y1", "ch_feces_rel_g3_Y1", "ch_feces_rel_g2_Y1",
+      "ch_feces_rel_g1_Y1"))
+
+
+barplot.genus.rel <- genus.rel.long %>% 
+  ggplot() +
+  aes(x = reorder(ident, -Bifidobacterium_order), 
+      y = value, 
+      fill = Variable) + 
+  geom_col(position = position_fill(), 
+           width=1) +
+  labs(
+    x = "Selles des enfants SEPAGES",
+    y = "Proportion",
+    title = "") +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_brewer(
+    name = "", 
+    labels = c("ch_feces_rel_g10_Y1" = "Anaerostipes", 
+               "ch_feces_rel_g8_Y1" = "Clostridium_XlVa", 
+               "ch_feces_rel_g9_Y1" = "Lachnospiracea incertae sedis", 
+               "ch_feces_rel_g7_Y1" = "Streptococcus",
+               "ch_feces_rel_g6_Y1" = "Faecalibacterium",  
+               "ch_feces_rel_g5_Y1" = "Akkermansia", 
+               "ch_feces_rel_g4_Y1" = "Escherichia Shigella",  
+               "ch_feces_rel_g3_Y1" = "Blautia", 
+               "ch_feces_rel_g2_Y1" = "Bacteroides",   
+               "ch_feces_rel_g1_Y1" = "Bifidobacterium"),
+    palette = "Paired", 
+    direction = - 1) +
+  scale_x_discrete(breaks = NULL) +
+  theme_minimal() +
+  theme(
+    text = element_text(family = "serif"),       # use  windowsFonts() to see how to set fonts
+    legend.position="bottom", 
+    axis.title.x = element_text(size = 18, color = "black"),
+    axis.title.y = element_text(size = 18, color = "black"),
+    axis.text.y = element_text(size = 16, color = "black"),
+    legend.text = element_text(size = 14, color = "black")) + 
+  guides(fill = guide_legend(nrow = 3))
+
+
+#### Boxplot des genres 
+genus.rel.long$Variable <- genus.rel.long$Variable %>%
+  fct_relevel(                                 
+    "ch_feces_rel_g1_Y1", "ch_feces_rel_g2_Y1", "ch_feces_rel_g3_Y1",
+    "ch_feces_rel_g4_Y1", "ch_feces_rel_g5_Y1", "ch_feces_rel_g6_Y1",
+    "ch_feces_rel_g7_Y1", "ch_feces_rel_g8_Y1", 
+    "ch_feces_rel_g9_Y1","ch_feces_rel_g10_Y1")
+
+
+boxplot.genus.rel <- genus.rel.long %>%
+  ggplot() +
+  aes(x = "", 
+      y = value, 
+      fill = Variable) +
+  geom_boxplot(shape = "circle") +
+  scale_fill_brewer(
+    palette = "Set3", 
+    direction = 1, 
+    labels = c("ch_feces_rel_g10_Y1" = "Anaerostipes", 
+               "ch_feces_rel_g8_Y1" = "Clostridium XlVa", 
+               "ch_feces_rel_g9_Y1" = "Lachnospiracea incertae sedis", 
+               "ch_feces_rel_g7_Y1" = "Streptococcus",
+               "ch_feces_rel_g6_Y1" = "Faecalibacterium",  
+               "ch_feces_rel_g5_Y1" = "Akkermansia", 
+               "ch_feces_rel_g4_Y1" = "Escherichia Shigella",  
+               "ch_feces_rel_g3_Y1" = "Blautia", 
+               "ch_feces_rel_g2_Y1" = "Bacteroides",   
+               "ch_feces_rel_g1_Y1" = "Bifidobacterium")) +
+  labs(
+    x = "Most abundant genera",
+    title = "",
+    y = "Relative abundance (%)", 
+    fill = ""
+  ) +
+  scale_y_continuous()+
+  theme_classic() +
+  theme(
+    text = element_text(family = "serif"), 
+    panel.background = element_rect(fill = "transparent", colour = NA),
+    plot.background = element_rect(fill = "transparent", colour = NA),
+    legend.background = element_rect(fill = "transparent", colour = NA), 
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(), 
+    axis.ticks.x = element_blank(),
+    axis.line.x = element_blank(),
+    axis.title = element_text(size = 9, face = "bold"),
+    axis.text.y = element_text(size = 9),
+    legend.text = element_text(size = 8, face = "italic"), 
+    legend.position = "right", 
+    legend.box = "vertical", 
+    legend.key.size = unit(0.5, "cm"))
+
+
+Fig1 <- barplot.phylum.rel + boxplot.genus.rel + plot_layout(ncol = 1) + plot_annotation(tag_levels = "a", tag_prefix = "(", tag_suffix = ")")
+
+ggsave("C:/Users/Aline/OneDrive - etu.univ-grenoble-alpes.fr/Documents/5. R projects/pollutants_gut_microbiota_Y1/4_output/Fig1.tiff", 
+       plot = Fig1, 
+       device = "tiff",
+       units = "mm",
+       width = 180, 
+       height = 200,
+       dpi = 300,
+       limitsize = FALSE)
+
+```
+
+
+# Polluants
+## Tableaux descriptifs
+Distribution des polluants avant log transformation  
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+descrip_num(data = metadata, vars = phenols_vec_num)  
+descrip_num(data = metadata, vars = phenols_vec_num_2)       
+descrip_num(data = metadata, vars = pfas_vec_num)
+descrip_num(data = metadata, vars = phthalates_vec_num)
+
+```
+
+Distribution des polluants après log transformation
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+descrip_num(data = metadata, vars = phenols_vec_ln)         
+descrip_num(data = metadata, vars = pfas_vec_ln)
+descrip_num(data = metadata, vars = phthalates_vec_ln)
+```
+
+Distribution des polluants catégoriels LOD/ LOQ
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+metadata %>% select(all_of(phenols_vec_cat)) %>% tbl_summary() 
+metadata %>% select(all_of(pfas_vec_cat)) %>% tbl_summary() 
+metadata %>% select(all_of(phthalates_vec_cat)) %>% tbl_summary() 
+```
+
+Distribution des polluants codés en tertiles 
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+metadata %>% select(all_of(phenols_vec_ter)) %>% tbl_summary() 
+metadata %>% select(all_of(pfas_vec_ter)) %>% tbl_summary() 
+metadata %>% select(all_of(phthalates_vec_ter)) %>% tbl_summary() 
+```
+
+Comparaison de la distribution des polluants entre les inclu / exclu des analyses GUMME 
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+metadata %>%
+  select(all_of(phenols_vec_2),
+         statut) %>%
+  tbl_summary(by = statut,
+              missing = "no") 
+
+metadata %>%
+  select(all_of(pfas_vec),
+         statut) %>%
+  tbl_summary(by = statut,
+              missing = "no") 
+
+metadata %>%
+  select(all_of(phthalates_vec),
+         statut) %>%
+  tbl_summary(by = statut,
+              missing = "no") 
+```
+
+
+## Graphiques descriptifs 
+Phenols
+```{r echo=FALSE, fig.height=15, fig.width=15, message=FALSE, warning=FALSE}
+boxplot(data = metadata, vars = phenols_vec_num)           # boxplots
+boxplot(data= metadata, vars = phenols_vec_ln)
+ 
+histogram(data = metadata, vars = phenols_vec_num)         # histogrammes 
+histogram(data= metadata, vars = phenols_vec_ln)
+
+barplot(data = metadata, vars = phenols_vec_cat)           # barplots (variables catégorielles)
+```
+
+PFAS
+```{r echo=FALSE, fig.height=15, fig.width=15, message=FALSE, warning=FALSE}
+boxplot(data = metadata, vars = pfas_vec_num)
+boxplot(data= metadata, vars = pfas_vec_ln)
+
+histogram(data = metadata, vars = pfas_vec_num)
+histogram(data= metadata, vars = pfas_vec_ln)
+
+barplot(data = metadata, vars = pfas_vec_cat)
+```
+
+Phthalates
+```{r echo=FALSE, fig.height=30, fig.width=15, message=FALSE, warning=FALSE}
+boxplot(data = metadata, vars = phthalates_vec_num)
+boxplot(data= metadata, vars = phthalates_vec_ln)
+
+histogram(data = metadata, vars = phthalates_vec_num)
+histogram(data= metadata, vars = phthalates_vec_ln)
+
+boxplot(data = metadata, vars = phthalates_vec_ms)
+boxplot(data= metadata, vars = phthalates_vec_ln_ms)
+
+histogram(data = metadata, vars = phthalates_vec_ms)
+histogram(data= metadata, vars = phthalates_vec_ln_ms)
+
+barplot(data = metadata, vars = phthalates_vec_cat)
+```
+
+## Vérification des données 
+### Visualisation des outliers
+```{r eval=FALSE, include=FALSE}
+outliers(data = metadata, var = mo_PFHpS_i_cor)
+outliers(data = metadata, var = mo_PFHpS_i_cor_ln)
+
+outliers(data = metadata, var = mo_PFHxS_cor)
+outliers(data = metadata, var = mo_PFHxS_cor_ln)
+
+outliers(data = metadata, var = mo_PFOS_cor)
+outliers(data = metadata, var = mo_PFOS_cor_ln)
+```
+
+### Visualisation et test de la normalité
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+densityplot(data = metadata, vars = phenols_vec_num)
+densityplot(data = metadata, vars = phenols_vec_ln)
+densityplot(data = metadata, vars = pfas_vec_num)
+densityplot(data = metadata, vars = pfas_vec_ln)
+densityplot(data = metadata, vars = phthalates_vec_num)
+densityplot(data = metadata, vars = phthalates_vec_ln)
+
+apply(metadata[, phenols_vec_ln],2,shapiro.test)
+apply(metadata[, pfas_vec_ln],2,shapiro.test)
+apply(metadata[, phthalates_vec_ln],2,shapiro.test)
+```
+
+### Visualisation et test de la corrélation 
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+phenols_cormat <- metadata[, phenols_vec_num]
+colnames(phenols_cormat) <- colnames(phenols_cormat) %>%
+  str_replace_all(c(
+    "mo_" = "",
+    "ch_" = "",
+    "_total_i_cor_" = " ",
+    "MEPA" = "Methylparaben", 
+    "ETPA" = "Ethylparaben", 
+    "BUPA" = "Butylparaben", 
+    "PRPA" = "Propylparaben", 
+    "OXBE" = "Benzophenone 3", 
+    "TRCS" = "Triclosan", 
+    "BPA" = "Bisphenol A", 
+    "BPS" = "Bisphenol S"
+  ))
+
+
+pfas_cormat <- metadata[, pfas_vec_num]
+colnames(pfas_cormat) <- colnames(pfas_cormat) %>%
+  str_replace_all(c(
+      "mo_" = "",
+      "ch_" = "",
+      "_i_cor" = "",
+      "_cor" = ""
+    ))
+colnames(pfas_cormat) <- paste(colnames(pfas_cormat), "t2", " ")
+
+phenols_pfas_cormat <- metadata[, c(phenols_vec_num, pfas_vec_num)]
+colnames(phenols_pfas_cormat) <- colnames(phenols_pfas_cormat) %>%
+  str_replace_all(c(
+    "mo_" = "",
+    "ch_" = "",
+    "_total_i_cor_" = " ",
+    "_total_cat_" = " ", 
+    "_i_cor" = "",
+    "_cor" = "",
+    "MEPA" = "Methylparaben", 
+    "ETPA" = "Ethylparaben", 
+    "BUPA" = "Butylparaben", 
+    "PRPA" = "Propylparaben", 
+    "OXBE" = "Benzophenone 3", 
+    "TRCS" = "Triclosan", 
+    "BPA" = "Bisphenol A", 
+    "BPS" = "Bisphenol S", 
+    "PFHpS" = "PFHpS t2", 
+    "PFHxS" = "PFHxS t2", 
+    "PFOS" = "PFOs t2", 
+    "PFNA" = "PFNA t2", 
+    "PFOA" = "PFOA t2", 
+    "PFDA" = "PFDA t2", 
+    "PFUnDA" = "PFUnDA t2"
+    ))
+
+heatmap_cor(cormat = phenols_cormat)
+heatmap_cor(cormat = pfas_cormat)
+heatmap_cor(cormat = phenols_pfas_cormat)
+
+phthalates_cormat <- metadata[, phthalates_vec_num]
+colnames(phthalates_cormat) <- colnames(phthalates_cormat) %>%
+  str_replace_all(c(
+    "mo_" = "",
+    "ch_" = "",
+    "_i_cor_" = " "
+  ))
+
+heatmap_cor(cormat = phthalates_cormat) 
+
+phthalates_cormat_sm <- 
+  metadata[, 
+           c(
+  "mo_DiNP_ms_i_cor_t2", "mo_DiNP_ms_i_cor_t3", "ch_DiNP_ms_i_cor_M2", "ch_DiNP_ms_i_cor_Y1",   # Métabolites DiNP
+  "mo_DEHP_ms_i_cor_t2", "mo_DEHP_ms_i_cor_t3", "ch_DEHP_ms_i_cor_M2", "ch_DEHP_ms_i_cor_Y1",   # Métabolites DEHP
+  "mo_MnBP_i_cor_t2", "mo_MnBP_i_cor_t3", "ch_MnBP_i_cor_M2", "ch_MnBP_i_cor_Y1",               # Métabolite DBP
+  "mo_MiBP_i_cor_t2", "mo_MiBP_i_cor_t3", "ch_MiBP_i_cor_M2", "ch_MiBP_i_cor_Y1",               # Métabolite DiBP
+  "mo_MBzP_i_cor_t2", "mo_MBzP_i_cor_t3", "ch_MBzP_i_cor_M2", "ch_MBzP_i_cor_Y1",               # Metabolite MBzP
+  "mo_MEP_i_cor_t2", "mo_MEP_i_cor_t3", "ch_MEP_i_cor_M2", "ch_MEP_i_cor_Y1",                   # Metabolite DEP
+  "mo_ohMPHP_i_cor_t2", "mo_ohMPHP_i_cor_t3", "ch_ohMPHP_i_cor_Y1",                             # Metabolite DEHP
+  "mo_DINCH_ms_i_cor_t2", "mo_DINCH_ms_i_cor_t3", "ch_DINCH_ms_i_cor_Y1")]                      # Metabolites DINCH           
+
+colnames(phthalates_cormat_sm) <- colnames(phthalates_cormat_sm) %>%
+  str_replace_all(c(
+    "mo_" = "",
+    "ch_" = "",
+    "_ms_i_cor_" = " ", 
+    "_i_cor_" = " "
+  ))
+
+heatmap_cor(cormat = phthalates_cormat_sm) 
+```
+
+
+# Analyses supplémentaires en réponse aux co auteurs 
+## Médiane et Q1-Q3 des âges gestationels et âges des enfants lors des semaines de prélévements
+```{r}
+library(lubridate)
+metadata %>% select(contains("ch_date")) %>% describe()
+metadata %>% select(contains("date")) %>% describe()
+
+
+metadata <-                                                                     
+  mutate(metadata,
+         ch_date_start_M2 = ymd(ch_date_start_M2), 
+         ch_date_start_Y1 = ymd(ch_date_start_Y1), 
+         
+         ch_urine_age_w_M2 = difftime(ch_date_start_M2, 
+                                      po_datedel,
+                                      units = "weeks"), 
+         ch_urine_age_w_Y1 = difftime(ch_date_start_Y1, 
+                                      po_datedel,
+                                      units = "weeks"))
+
+metadata %>% select(ch_date_start_M2, ch_date_start_Y1, po_datedel, ch_urine_age_w_M2, ch_urine_age_w_Y1) %>% describe()
+metadata$ch_urine_age_w_M2 <- as.numeric(metadata$ch_urine_age_w_M2)
+metadata$ch_urine_age_w_Y1 <- as.numeric(metadata$ch_urine_age_w_Y1)
+describe(metadata$ch_urine_age_w_M2)
+describe(metadata$ch_urine_age_w_Y1)
+```
+
+## Graphiques descriptifs de la distribution des polluants
+```{r}
+data_long <-                                                     
+  metadata %>% 
+  select(ident, all_of(phenols_vec_ln), all_of(pfas_vec_ln))
+var_label(data_long) <- NULL
+data_long[, c(phenols_vec_ln, pfas_vec_ln)] <- lapply(data_long[, c(phenols_vec_ln, pfas_vec_ln)], as.numeric) 
+data_long <- data_long %>% 
+  pivot_longer(cols = -ident, names_to = "Variable", values_to = "Value")
+data_long <- data_long %>%
+  mutate(
+    exposure_window = str_split_fixed(Variable, "_total_i_cor_", 2)[, 2],
+    Variable = str_split_fixed(Variable, "_total_i_cor_", 2)[, 1],
+    Variable =  fct_recode(Variable,
+                           "Bisphenol A" = "ch_BPA",
+                           "Ethylparaben" = "ch_ETPA",
+                           "Methylparaben" = "ch_MEPA",
+                           "Benzophenone 3" = "ch_OXBE",
+                           "Propylparben" = "ch_PRPA",
+                           "Triclosan" = "ch_TRCS",
+                           "Bisphenol A" = "mo_BPA",
+                           "Ethyparaben" = "mo_ETPA",
+                           "Methylparaben" = "mo_MEPA",
+                           "Benzophenone 3" = "mo_OXBE",
+                           "PFDA" = "mo_PFDA_i_cor_ln",
+                           "PFHpS" = "mo_PFHpS_i_cor_ln",
+                           "PFHxS" = "mo_PFHxS_cor_ln",
+                           "PFNA" = "mo_PFNA_ln",
+                           "PFOA" = "mo_PFOA_cor_ln",
+                           "PFOS" = "mo_PFOS_cor_ln",
+                           "PFUnDA" = "mo_PFUnDA_i_cor_ln",
+                           "Propylparaben" = "mo_PRPA",
+                           "Triclosan" = "mo_TRCS"
+    ),
+    exposure_window = fct_recode(exposure_window,
+                                 "Mother, pregnancy trim. 2" = "",
+                                 "Child, 2 months" = "M2_ln",
+                                 "Mother, pregnancy trim. 2" = "t2_ln",
+                                 "Mother, pregnancy trim. 3" = "t3_ln",
+                                 "Child, 12 months" = "Y1_ln"
+    ), 
+    exposure_window = fct_relevel(exposure_window,
+      "Mother, pregnancy trim. 2", "Mother, pregnancy trim. 3", "Child, 2 months",
+      "Child, 12 months"
+    )
+  )
+
+data_long %>%
+ filter(!(Variable %in% c("PFOA", "PFNA", "PFHxS", "PFOS", "PFDA", "PFUnDA", "PFHpS"))) %>%
+ ggplot() +
+ aes(x = "", y = Value, fill = Variable) +
+ geom_boxplot(shape = "circle") +
+ scale_fill_hue(direction = 1) +
+ labs(fill = "Phenols", 
+      x = "log transformation of the concentrations (ng/mL)") +
+ coord_flip() +
+ theme_bw() +
+ theme(axis.title.y = element_blank(), 
+       axis.ticks.y = element_blank()) +
+ facet_wrap(~exposure_window, ncol = 1L)
+
+
+
+data_long %>%
+ filter(!(Variable %in% c("PFOA", "PFNA", "PFHxS", "PFOS", "PFDA", "PFUnDA", "PFHpS"))) %>%
+ ggplot() +
+ aes(x = "", y = Value, fill = Variable) +
+ geom_boxplot(shape = "circle") +
+ scale_fill_hue(direction = 1) +
+ labs(y = "Phenols concentrations, µg/L (Neperian logarithmic transformation)", 
+      fill = "Phenols", 
+      x = "") +
+ coord_flip() +
+ theme_bw() +
+ theme(axis.ticks.y = element_blank())+
+ facet_wrap(~exposure_window, ncol = 1L)
+
+data_long %>%
+ filter(Variable %in% c("PFOA", "PFNA", "PFHxS", "PFOS", "PFDA", "PFUnDA", "PFHpS")) %>%
+ ggplot() +
+ aes(x = "", y = Value, fill = Variable) +
+ geom_boxplot(shape = "circle") +
+ scale_fill_brewer(palette = "Paired", 
+ direction = 1) +
+ labs(fill = "PFAS") +
+ coord_flip() +
+ theme_bw() +
+ facet_wrap(~exposure_window, ncol = 1L)
+
+```
+
