@@ -542,6 +542,8 @@ table_log <- table_log %>%
                                    "TRCS" = "Triclosan",
                                    "_total_i_cor_" = "", 
                                    "_total_cat_" = "",
+                                   "_conj_i_cor_" = "", 
+                                   "_conj_cat_" = "",
                                    "t2_2" = "",
                                    "t3_2" = "",
                                    "M2_2" = "",
@@ -851,6 +853,16 @@ table_log %>%                                                                   
 mahatan_plot <- table_log  %>%
   filter(is.na(Codage)) %>%
   mutate(
+    Outcome = fct_recode(Outcome,
+                         "Clostridium IV" = "Clostridium_IV",
+                          "Clostridium sensu stricto" = "Clostridium_sensu_stricto",
+                          "Clostridium XlVa" = "Clostridium_XlVa",
+                         "Ruminococcus 2" = "Ruminococcus2",
+                          "Clostridium XVIII" = "Clostridium_XVIII",
+                          "Erysipelotrichaceae incertae sedis" = "Erysipelotrichaceae_incertae_sedis",
+                          "Escherichia Shigella" = "Escherichia_Shigella",
+                          "Lachnospiracea incertae sedis" = "Lachnospiracea_incertae_sedis",
+                          "Saccharibacteria genera incertae sedis" = "Saccharibacteria_genera_incertae_sedis"),
     Pollutants_Time_window_rec_2 = ifelse(
       Outcome == "Romboutsia" & Pollutants_Time_window_rec %in% c("BPS M2", "Benzophenone 3 t2"), 
       "BPS M2, Benzophenone 3 t2", 
@@ -865,6 +877,7 @@ mahatan_plot <- table_log  %>%
   geom_text(aes(label = ifelse(`p-value` < 0.0035, as.character(Pollutants_Time_window_rec_2), "")), hjust = 0, vjust = -0.3, angle = 35, size = 3.5) +
   scale_shape_manual(values = c("Beta<0" = 15, "Beta≥0" = 17, "Non linear" = 18)) +# 15: carré plein, 17: triangle plein
   theme(
+    axis.text.y = element_text(face = "italic"),
     legend.position = "right",
     legend.box = "vertical", 
     legend.justification = "right")
@@ -938,7 +951,7 @@ table_log %>%
   filter((Outcome == "Escherichia_Shigella" & Pollutants_Time_window_rec == "Benzophenone 3 M2") |
            (Outcome == "Clostridium_XlVa" & Pollutants_Time_window_rec == "Benzophenone 3 t2")|
            (Outcome == "Lachnospiracea_incertae_sedis" & Pollutants_Time_window_rec == "Butylparaben Y1") |
-           (Outcome == "Lachnospiracea_incertae_sedis" & Pollutants_Time_window_rec == "BPA Y1") | 
+           (Outcome == "Lachnospiracea_incertae_sedis" & Pollutants_Time_window_rec == "Methylparaben Y1") | 
            (Outcome == "Anaerostipes" & Pollutants_Time_window_rec == "Propylparaben t2") |
            (Outcome == "Enterococcus" & Pollutants_Time_window_rec == "Ethylparaben t2") |
            (Outcome == "Enterococcus" & Pollutants_Time_window_rec == "Butylparaben Y1") |
@@ -948,9 +961,10 @@ table_log %>%
            (Outcome == "Romboutsia" & Pollutants_Time_window_rec == "Benzophenone 3 t2") |
            (Outcome == "Klebsiella" & Pollutants_Time_window_rec == "Ethylparaben Y1") |
            (Outcome == "Coprococcus" & Pollutants_Time_window_rec == "BPA Y1") |
-           (Outcome == "Lactococcus" & Pollutants_Time_window_rec == "BPA M2") |
+           (Outcome == "Clostridium_XVIII" & Pollutants_Time_window_rec == "BPA Y1") |
            (Outcome == "Anaerotruncus" & Pollutants_Time_window_rec == "Butylparaben Y1")) %>%
   View()
+
 
 
 results_signi <- tbl_merge(
