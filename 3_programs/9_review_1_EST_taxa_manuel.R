@@ -14,7 +14,7 @@ library(labelled)
 library(questionr)
 library(sjlabelled)
 library(openxlsx)
-source("~/5. R projects/pollutants_gut_microbiota_Y1/3_programs/4_functions_AD_gumme.R")
+source("3_programs/4_functions_AD_gumme.R")
 rm(comp_effectifs, heatmap_cor_pairwise, model_covar, model_multi, model_summary, model_univ_multi, 
    table_cor, table_cor_sg, test_sensi_sg)
 library(corrplot)
@@ -68,7 +68,7 @@ covariates <- c("ch_feces_RUN_Y1",
 pollutants <- c("mo_MEPA_total_i_cor_t2_ln",
                 "mo_MEPA_total_i_cor_t3_ln",
                 "ch_MEPA_total_i_cor_M2_ln",
-                "ch_MEPA_total_i_cor_Y1_ln",
+                "ch_MEPA_conj_i_cor_Y1_ln",   # conjugated concentration in the main analysis
                 
                 "mo_ETPA_total_i_cor_t2_ln", 
                 "mo_ETPA_total_i_cor_t3_ln",
@@ -87,8 +87,8 @@ pollutants <- c("mo_MEPA_total_i_cor_t2_ln",
                 
                 "mo_BPA_total_i_cor_t2_ln",
                 "mo_BPA_total_i_cor_t3_ln",
-                "ch_BPA_total_i_cor_M2_ln",
-                "ch_BPA_total_i_cor_Y1_ln",
+                "ch_BPA_conj_i_cor_M2_ln",     # conjugated concentration in the main analysis
+                "ch_BPA_conj_i_cor_Y1_ln",     # conjugated concentration in the main analysis
                 
                 "mo_BPS_total_cat_t2_2",                                          
                 "mo_BPS_total_cat_t3_2",                                          
@@ -128,6 +128,8 @@ load("2_final_data/metadata.RData")
 input_metadata <- metadata %>%
   select(ident,                      
          all_of(covariates), 
+         ch_MEPA_total_i_cor_Y1_ln, ch_BPA_total_i_cor_M2_ln, ch_BPA_total_i_cor_Y1_ln, # pour analyses de sensibilité
+         ch_MEPA_free_i_cor_Y1_ln, ch_BPA_free_i_cor_M2_ln, ch_BPA_free_i_cor_Y1_ln,    # pour analyses de sensibilité
          all_of(pollutants)) %>%
   filter(!is.na(ch_feces_RUN_Y1)) %>%
   column_to_rownames("ident")
