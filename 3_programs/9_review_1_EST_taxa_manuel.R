@@ -438,6 +438,7 @@ data_df_clr <- left_join(input_data_clr, input_metadata, by = "ident")
 corres <- 
   taxa_table %>% 
   select(Phyla_corres = ch_feces_phylum_ASVbased_Y1, 
+         Family_corres = ch_feces_family_ASVbased_Y1,
          Outcome = ch_feces_genus_ASVbased_Y1) %>%
   filter(Outcome %in% genera_linear) %>%
   distinct(Outcome, .keep_all = TRUE)
@@ -507,7 +508,7 @@ rm(terms, formula, model,
 
 table_log <-                                                                    # Ajout variable de la correspondance en phyla
   left_join(table_log, corres, by = "Outcome") %>% 
-  select(Phyla_corres, everything())
+  select(Phyla_corres, Family_corres, everything())
 
 table_log <- table_log %>%
   select(Phyla_corres, 
@@ -683,6 +684,19 @@ table_log %>%                                                                   
   select(-Phyla_corres, -Pollutants, -Time_window,  - Pollutants_Time_window, -"q-value", -"q_value_shape", -"p_value_shape", -antimicrobial) %>%
   View()
 
+table_log <- table_log %>%
+  mutate(
+      Outcome = fct_recode(Outcome,
+                           "Clostridium IV" = "Clostridium_IV",
+                           "Clostridium sensu stricto" = "Clostridium_sensu_stricto",
+                           "Clostridium XlVa" = "Clostridium_XlVa",
+                           "Ruminococcus 2" = "Ruminococcus2",
+                           "Clostridium XVIII" = "Clostridium_XVIII",
+                           "Erysipelotrichaceae incertae sedis" = "Erysipelotrichaceae_incertae_sedis",
+                           "Escherichia Shigella" = "Escherichia_Shigella",
+                           "Lachnospiracea incertae sedis" = "Lachnospiracea_incertae_sedis",
+                           "Saccharibacteria genera incertae sedis" = "Saccharibacteria_genera_incertae_sedis"))
+
 ## Version clr ----
 # tbls_by_outcome_clr <- vector("list", length(genera_linear))                        # création liste pour stocker les tableaux par outcome
 # names(tbls_by_outcome_clr) <- genera_linear
@@ -853,16 +867,6 @@ table_log %>%                                                                   
 mahatan_plot <- table_log  %>%
   filter(is.na(Codage)) %>%
   mutate(
-    Outcome = fct_recode(Outcome,
-                         "Clostridium IV" = "Clostridium_IV",
-                          "Clostridium sensu stricto" = "Clostridium_sensu_stricto",
-                          "Clostridium XlVa" = "Clostridium_XlVa",
-                         "Ruminococcus 2" = "Ruminococcus2",
-                          "Clostridium XVIII" = "Clostridium_XVIII",
-                          "Erysipelotrichaceae incertae sedis" = "Erysipelotrichaceae_incertae_sedis",
-                          "Escherichia Shigella" = "Escherichia_Shigella",
-                          "Lachnospiracea incertae sedis" = "Lachnospiracea_incertae_sedis",
-                          "Saccharibacteria genera incertae sedis" = "Saccharibacteria_genera_incertae_sedis"),
     Pollutants_Time_window_rec_2 = ifelse(
       Outcome == "Romboutsia" & Pollutants_Time_window_rec %in% c("BPS M2", "Benzophenone 3 t2"), 
       "BPS M2, Benzophenone 3 t2", 
@@ -882,7 +886,7 @@ mahatan_plot <- table_log  %>%
     legend.box = "vertical", 
     legend.justification = "right")
 mahatan_plot
-ggsave("4_output/taxa manual/manhattan_plot.tiff", 
+ggsave("4_output/taxonomie/manhattan_plot.tiff", 
        mahatan_plot, 
        device = "tiff",
        units = "cm",
@@ -924,6 +928,7 @@ forest_plot <- table_log %>%
     legend.position = "right",
     legend.box = "vertical", 
     legend.justification = "right", 
+    axis.text.y = element_text(face = "italic"),
     # legend.spacing.y = unit(0, "cm"), 
     # legend.spacing.x = unit(0, "cm"), 
     # legend.box.margin = margin(0,0,0,0, "cm"), 
@@ -931,7 +936,7 @@ forest_plot <- table_log %>%
   ) 
 
 forest_plot
-ggsave("4_output/taxa manual/forest_plot.tiff", 
+ggsave("4_output/taxonomie/forest_plot.tiff", 
        forest_plot, 
        device = "tiff",
        units = "cm",
@@ -948,10 +953,10 @@ table_log %>%
   View()
 
 table_log %>%
-  filter((Outcome == "Escherichia_Shigella" & Pollutants_Time_window_rec == "Benzophenone 3 M2") |
-           (Outcome == "Clostridium_XlVa" & Pollutants_Time_window_rec == "Benzophenone 3 t2")|
-           (Outcome == "Lachnospiracea_incertae_sedis" & Pollutants_Time_window_rec == "Butylparaben Y1") |
-           (Outcome == "Lachnospiracea_incertae_sedis" & Pollutants_Time_window_rec == "Methylparaben Y1") | 
+  filter((Outcome == "Escherichia Shigella" & Pollutants_Time_window_rec == "Benzophenone 3 M2") |
+           (Outcome == "Clostridium XlVa" & Pollutants_Time_window_rec == "Benzophenone 3 t2")|
+           (Outcome == "Lachnospiracea incertae sedis" & Pollutants_Time_window_rec == "Butylparaben Y1") |
+           (Outcome == "Lachnospiracea incertae sedis" & Pollutants_Time_window_rec == "Methylparaben Y1") | 
            (Outcome == "Anaerostipes" & Pollutants_Time_window_rec == "Propylparaben t2") |
            (Outcome == "Enterococcus" & Pollutants_Time_window_rec == "Ethylparaben t2") |
            (Outcome == "Enterococcus" & Pollutants_Time_window_rec == "Butylparaben Y1") |
@@ -961,8 +966,14 @@ table_log %>%
            (Outcome == "Romboutsia" & Pollutants_Time_window_rec == "Benzophenone 3 t2") |
            (Outcome == "Klebsiella" & Pollutants_Time_window_rec == "Ethylparaben Y1") |
            (Outcome == "Coprococcus" & Pollutants_Time_window_rec == "BPA Y1") |
-           (Outcome == "Clostridium_XVIII" & Pollutants_Time_window_rec == "BPA Y1") |
+           (Outcome == "Clostridium XVIII" & Pollutants_Time_window_rec == "BPA Y1") |
            (Outcome == "Anaerotruncus" & Pollutants_Time_window_rec == "Butylparaben Y1")) %>%
+  View()
+
+table_log %>%
+  filter(
+           (Outcome == "Lachnospiracea incertae sedis" & Pollutants_Time_window_rec == "Butylparaben Y1") |
+           (Outcome == "Lachnospiracea incertae sedis" & Pollutants_Time_window_rec == "Methylparaben Y1") ) %>%
   View()
 
 

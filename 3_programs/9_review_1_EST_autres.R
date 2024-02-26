@@ -28,12 +28,16 @@ load("2_final_data/bdd_taxa.RData")
 source("3_programs/4_vectors_AD_gumme.R", echo=TRUE)
 source("3_programs/4_functions_AD_gumme.R", encoding = 'UTF-8')  
 
+bdd_taxa <- bdd_taxa %>% select(ident, ch_feces_rel_p1_Y1)
 
-bdd <- bdd_taxa %>% 
+bdd <- metadata %>% 
+  select(ident, 
+         all_of(phenols_vec_ln), 
+              all_of(pfas_vec_ln)) 
+bdd <- left_join(bdd, bdd_taxa, by = "ident")
+bdd <- bdd %>%
   filter(!is.na(ch_feces_rel_p1_Y1)) %>%
-  select(all_of(phenols_vec_ln), 
-              all_of(pfas_vec_ln)) %>%
-  na.omit()
+  select(-ident, -ch_feces_rel_p1_Y1)
 
 colnames(bdd) <- colnames(bdd) %>%
   str_replace_all(c(
@@ -52,7 +56,7 @@ colnames(bdd) <- colnames(bdd) %>%
     "_cor" = "", 
     "PFHpS" = "PFHpS t2", 
     "PFHxS" = "PFHxS t2", 
-    "PFOS" = "PFOs t2", 
+    "PFOS" = "PFOS t2", 
     "PFNA" = "PFNA t2", 
     "PFOA" = "PFOA t2", 
     "PFDA" = "PFDA t2", 
