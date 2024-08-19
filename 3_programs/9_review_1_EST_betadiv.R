@@ -2742,6 +2742,278 @@ ggsave(plot = boxplot,
        width = 40, 
        height = 12)
 
+
+### Version 3 : mepa Y1 + prpa Y1 (textes des axes modifiés) ----
+#### 1st vs 2nd tertile ----
+bdd_boxplot_article <- bdd_long_Y1 %>%
+  filter(Pollutant %in% c("Methylparaben 12 months", "Propylparaben 12 months"))
+
+bdd_boxplot_article <- bdd_boxplot_article %>%
+  filter(!Groups %in% c(" 1st tertile", " 2nd tertile", " 3rd tertile")) %>%
+  mutate(
+    Groups = fct_relevel(Groups,       
+                         "3rd tertile", "2nd tertile - 3rd tertile", " 3rd tertile", " 2nd tertile",
+                         "1st tertile - 3rd tertile", " 1st tertile", "2nd tertile",
+                         "1st tertile - 2nd tertile", "1st tertile"),
+    Pollutant = fct_recode(Pollutant,
+                           "Methylparaben, 12-month exposure" = "Methylparaben 12 months",
+                           "Propylparaben, 12-month exposure" = "Propylparaben 12 months"))
+
+
+boxplot_1 <- bdd_boxplot_article %>%
+  filter(Groups %in% c("1st tertile", "1st tertile - 2nd tertile", "2nd tertile")) %>%
+  ggplot() +
+  aes(
+    x = Bray_curtis_dissimilarity,
+    y = Groups,
+    fill = Groups
+  ) +
+  geom_boxplot() +
+  #labs(x = "Bray Curtis dissimilarity") +
+  theme_lucid() +
+  theme(legend.position = "none", 
+        axis.title.y = element_blank(), 
+        axis.text.y = element_text(size = 10, color = "black"),
+        axis.title.x = element_blank(), 
+        axis.text.x = element_blank(), 
+        axis.line.x = element_blank(), 
+        strip.text = element_text(size = 12)) +
+  facet_wrap(vars(Pollutant)) +
+  scale_fill_manual(
+    values = c(`1st tertile` = "#FFE0DE",   # les catégories faibles expositions (intragroupes)
+               `1st tertile - 2nd tertile` = "gray70",  # les variances intergroupes
+               `1st tertile - 3rd tertile` = "gray70",
+               `2nd tertile - 3rd tertile` = "gray70",
+               `2nd tertile` = "#FF8F87",   # les catégorires moyennes expositions (intragroupes) 
+               `3rd tertile` = "#FF4034"))+
+  scale_y_discrete(labels = function(x) {
+    lapply(x, function(lbl) {
+      if (grepl("1st tertile - 2nd tertile", lbl)) {
+        bquote("1"^st* " tertile - 2"^nd* " tertile intergroup diversity")
+      } else if (grepl("1st", lbl)) {
+        bquote("1"^st* " tertile intragroup diversity")
+      } else if (grepl("2nd", lbl)) {
+        bquote("2"^nd* " tertile intragroup diversity")
+      } else {
+        lbl
+      }
+    })
+  }) 
+
+my_tag <- c("0.21\n(1.19)", "0.14\n(1.29)") 
+boxplot_1 <- tag_facet(boxplot_1, 
+                       x = 1.05, y = 2, 
+                       vjust = 0.5, hjust = 0.5,
+                       open = "", close = "",
+                       fontface = 1,
+                       size = 3.5,
+                       #family = "serif",
+                       tag_pool = my_tag) +
+  theme_lucid() +
+  theme(legend.position = "none", 
+        axis.title.y = element_blank(), 
+        axis.text.y = element_text(size = 10, color = "black"),
+        axis.title.x = element_blank(), 
+        axis.text.x = element_blank(), 
+        axis.line.x = element_blank(), 
+        strip.text = element_text(size = 12)) 
+
+my_tag_bis <- c("p-value\n(F statistic)", "p-value\n(F statistic)")
+boxplot_1 <- tag_facet(boxplot_1, 
+                       x = 1.07, y = 3.1, 
+                       vjust = 0.5, hjust = 0.75,
+                       open = "", close = "",
+                       fontface = 1,
+                       size = 3.5,
+                       #family = "serif",
+                       tag_pool = my_tag_bis) +
+  theme_lucid() +
+  theme(legend.position = "none", 
+        axis.title.y = element_blank(), 
+        axis.text.y = element_text(size = 10, color = "black"),
+        axis.title.x = element_blank(), 
+        axis.text.x = element_blank(), 
+        axis.line.x = element_blank(), 
+        strip.text = element_text(size = 12)) 
+
+
+boxplot_1
+
+#### 1st vs 3rd tertile ----
+boxplot_2 <- bdd_boxplot_article %>%
+  filter(Groups %in% c("1st tertile", "1st tertile - 3rd tertile", "3rd tertile")) %>%
+  ggplot() +
+  aes(
+    x = Bray_curtis_dissimilarity,
+    y = Groups,
+    fill = Groups
+  ) +
+  geom_boxplot() +
+  #labs(x = "Bray Curtis dissimilarity") +
+  theme_lucid() +
+  theme(legend.position = "none", 
+        axis.title.y = element_blank(), 
+        axis.title.x = element_blank(),
+        axis.text.y = element_text(size = 10, color = "black"),
+        axis.text.x = element_blank(), 
+        axis.line.x = element_blank(),
+        strip.background = element_blank(),  # Supprime le fond des facettes
+        strip.text = element_blank()) +     # Supprime le texte des facettes) 
+  facet_wrap(vars(Pollutant)) +
+  scale_fill_manual(
+    values = c(`1st tertile` = "#FFE0DE",   # les catégories faibles expositions (intragroupes)
+               `1st tertile - 2nd tertile` = "gray70",  # les variances intergroupes
+               `1st tertile - 3rd tertile` = "gray70",
+               `2nd tertile - 3rd tertile` = "gray70",
+               `2nd tertile` = "#FF8F87",   # les catégorires moyennes expositions (intragroupes)
+               `3rd tertile` = "#FF4034"))+
+  scale_y_discrete(labels = function(x) {
+    lapply(x, function(lbl) {
+      if (grepl("1st tertile - 3rd tertile", lbl)) {
+        bquote("1"^st* " tertile - 3"^rd* " tertile intergroup diversity")
+      } else if (grepl("1st", lbl)) {
+        bquote("1"^st* " tertile intragroup diversity")
+      } else if (grepl("3rd", lbl)) {
+        bquote("3"^rd* " tertile intragroup diversity")
+      } else {
+        lbl
+      }
+    })
+  })
+
+my_tag <- c("0.03\n(1.62)", "0.002\n(2.01)") 
+
+boxplot_2 <- tag_facet(boxplot_2, 
+                       x = 1.05, y = 2, 
+                       vjust = 0.5, hjust = 0.5,
+                       open = "", close = "",
+                       fontface = 1,
+                       size = 3.5,
+                       #family = "serif",
+                       tag_pool = my_tag) +
+  theme_lucid() +
+  theme(legend.position = "none", 
+        axis.title.y = element_blank(), 
+        axis.title.x = element_blank(),
+        axis.text.y = element_text(size = 10, color = "black"),
+        axis.text.x = element_blank(), 
+        axis.line.x = element_blank(),
+        strip.background = element_blank(),  # Supprime le fond des facettes
+        strip.text = element_blank())      # Supprime le texte des facettes) 
+
+my_tag_bis <- c("       \n             ", "       \n             ")
+boxplot_2 <- tag_facet(boxplot_2, 
+                       x = 1.07, y = 3.1, 
+                       vjust = 0.5, hjust = 0.75,
+                       open = "", close = "",
+                       fontface = 1,
+                       size = 3.5,
+                       #family = "serif",
+                       tag_pool = my_tag_bis) +
+  theme_lucid() +
+  theme(legend.position = "none", 
+        axis.title.y = element_blank(), 
+        axis.title.x = element_blank(),
+        axis.text.y = element_text(size = 10, color = "black"),
+        axis.text.x = element_blank(), 
+        axis.line.x = element_blank(),
+        strip.background = element_blank(),  # Supprime le fond des facettes
+        strip.text = element_blank())     # Supprime le texte des facettes) 
+
+
+#### 2nd vs 3rd tertile ----
+boxplot_3 <- bdd_boxplot_article %>%
+  filter(Groups %in% c("2nd tertile", "2nd tertile - 3rd tertile", "3rd tertile")) %>%
+  ggplot() +
+  aes(
+    x = Bray_curtis_dissimilarity,
+    y = Groups,
+    fill = Groups
+  ) +
+  geom_boxplot() +
+  labs(x = "Bray Curtis β-diversity") +
+  theme_lucid() +
+  theme(legend.position = "none", 
+        axis.title.x = element_text(size = 12, face = "bold"),
+        axis.title.y = element_blank(), 
+        axis.text.y = element_text(size = 10, color = "black"),
+        #axis.title.x = element_blank(), 
+        axis.text.x = element_text(size = 10, color = "black"),
+        strip.background = element_blank(),  # Supprime le fond des facettes
+        strip.text = element_blank()) +     # Supprime le texte des facettes) 
+  facet_wrap(vars(Pollutant)) +
+  scale_fill_manual(
+    values = c(`1st tertile` = "#FFE0DE",   # les catégories faibles expositions (intragroupes)
+               `1st tertile - 2nd tertile` = "gray70",  # les variances intergroupes
+               `1st tertile - 3rd tertile` = "gray70",
+               `2nd tertile - 3rd tertile` = "gray70",
+               `2nd tertile` = "#FF8F87",   # les catégorires moyennes expositions (intragroupes)
+               `3rd tertile` = "#FF4034"))+
+  scale_y_discrete(labels = function(x) {
+    lapply(x, function(lbl) {
+      if (grepl("2nd tertile - 3rd tertile", lbl)) {
+        bquote("2"^nd* " tertile - 3"^rd* " tertile intergroup diversity")
+      } else if (grepl("2nd", lbl)) {
+        bquote("2"^nd* " tertile intragroup diversity")
+      } else if (grepl("3rd", lbl)) {
+        bquote("3"^rd* " tertile intragroup diversity")
+      } else {
+        lbl
+      }
+    })
+  })
+my_tag <- c("0.06\n(1.45)", "0.02\n(1.67)") 
+boxplot_3 <- tag_facet(boxplot_3, 
+                       x = 1.05, y = 2, 
+                       vjust = 0.5, hjust = 0.5,
+                       open = "", close = "",
+                       fontface = 1,
+                       size = 3.5,
+                       #family = "serif",
+                       tag_pool = my_tag) +
+  theme_lucid() +
+  theme(legend.position = "none", 
+        axis.title.x = element_text(size = 12, face = "bold"),
+        axis.title.y = element_blank(), 
+        axis.text.y = element_text(size = 10, color = "black"),
+        #axis.title.x = element_blank(), 
+        axis.text.x = element_text(size = 10, color = "black"),
+        strip.background = element_blank(),  # Supprime le fond des facettes
+        strip.text = element_blank())    # Supprime le texte des facettes) 
+
+
+my_tag_bis <- c("       \n             ", "       \n             ")
+boxplot_3 <- tag_facet(boxplot_3, 
+                       x = 1.07, y = 3.1, 
+                       vjust = 0.5, hjust = 0.75,
+                       open = "", close = "",
+                       fontface = 1,
+                       size = 3.5,
+                       #family = "serif",
+                       tag_pool = my_tag_bis) +
+  theme_lucid() +
+  theme(legend.position = "none", 
+        axis.title.x = element_text(size = 12, face = "bold"),
+        axis.title.y = element_blank(), 
+        axis.text.y = element_text(size = 10, color = "black"),
+        #axis.title.x = element_blank(), 
+        axis.text.x = element_text(size = 10, color = "black"),
+        strip.background = element_blank(),  # Supprime le fond des facettes
+        strip.text = element_blank())    # Supprime le texte des facettes) 
+
+
+boxplot <- boxplot_1 + boxplot_2 + boxplot_3 + plot_layout(nrow = 3)
+boxplot
+
+
+ggsave(plot = boxplot, 
+       filename = "4_output/betadiv/boxplot_figure4_24_08_19.tiff", 
+       device = "tiff", 
+       units = "cm", 
+       dpi = 400,
+       width = 40, 
+       height = 12)
+
 # Test 1 seule fois vérif ----
 set.seed(1996)
 results <- 
